@@ -83,7 +83,7 @@ _Several core functionalities of MMTpy relies on the [COBRApy](https://github.co
    pip install -r requirements.txt
    ```
 
-_To use any of the optimization features, please install [Gurobi](https://www.gurobi.com) and obtain a valid license. Free academic licenses are available and can be obtained through the [Academic Program and Licenses](https://www.gurobi.com/academia/academic-program-and-licenses/) page._
+***Important Note: for improved computational efficiency, please install [Gurobi](https://www.gurobi.com) or other compatible LP solvers during optimization tasks, such as the [IBM CPLEX Optimizer](https://www.ibm.com/products/ilog-cplex-optimization-studio/cplex-optimizer), and obtain a valid license. Free academic licenses for Gurobi can be obtained through the [Academic Program and Licenses](https://www.gurobi.com/academia/academic-program-and-licenses/) page.***
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
