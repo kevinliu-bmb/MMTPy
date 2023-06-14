@@ -46,7 +46,7 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
-    <li><a href="#model-compartments-and-reactions">A note regarding model compartments and reaction types</a></li>
+    <li><a href="#a-note-regarding-model-compartments-and-reaction-types">A note regarding model compartments and reaction types</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
@@ -106,7 +106,7 @@ _For more examples, please refer to the [tutorial.ipynb](...) Jupyter Notebook_
 
 
 <!-- A NOTE REGARDING MODEL COMPARTMENTS AND REACTIONS -->
-## Model Compartments and Reactions
+## A Note Regarding Model Compartments and Reaction Types
 
 ***The following information is based on inferred definitions from [Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html) and may not represent the original author's definitions. Moreover, these definitions are unlikely to be generalizable to alternative tools.***
 
