@@ -16,7 +16,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     Parameters
     ----------
     model_input : str or cobra.Model
-        Path to a multi-species model in any COBRApy supported format or a 
+        Path to a multi-species model in any COBRApy supported format or a
         COBRApy model loaded into memory.
     add_1ba : bool, optional
         If True, will set diet 1ba bounds to the model before optimizing, by
@@ -44,15 +44,21 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
         print("\nLoading the model...")
         model = load_model(model_input)
     else:
-        raise ValueError("The model_input must be a path to a model or a COBRApy model object.")
+        raise ValueError(
+            "The model_input must be a path to a model or a COBRApy model object."
+        )
 
     # Add diet 1ba if desired
     if add_1ba:
         for rxn in model.reactions:
             if "Diet_" in rxn.id and rxn.lower_bound != 0:
-                if "dgchol" in rxn.id or "gchola" in rxn.id or \
-                    "tchola" in rxn.id or "tdchola" in rxn.id:
-                    model.reactions.get_by_id(rxn.id).bounds = (-1000., 0.)
+                if (
+                    "dgchol" in rxn.id
+                    or "gchola" in rxn.id
+                    or "tchola" in rxn.id
+                    or "tdchola" in rxn.id
+                ):
+                    model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 0.0)
 
     #########################################################
     # Part 1: maximize the flux through all UFEt reactions
@@ -72,15 +78,19 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     maximized_UFEt_flux_list = []
     for rxn in UFEt_rxn_list:
         counter += 1
-        print(f"\nMaximizing UFEt reaction {str(counter)} of {str(counter_max)} \
-              for {model.name}")
+        print(
+            f"\nMaximizing UFEt reaction {str(counter)} of {str(counter_max)} \
+              for {model.name}"
+        )
         model.objective = rxn
         solution = model.optimize()
         maximized_UFEt_flux_list.append(solution.objective_value)
         print(f"{rxn}:\t{solution.objective_value}")
 
     # Create a dictionary of the maximized UFEt fluxes
-    maximized_UFEt_flux_dict = dict(zip(UFEt_rxn_list, maximized_UFEt_flux_list, strict = False))
+    maximized_UFEt_flux_dict = dict(
+        zip(UFEt_rxn_list, maximized_UFEt_flux_list, strict=False)
+    )
 
     print(f"\n[COMPLETED] Part 1: maximization complete for {model.name}")
 
@@ -97,15 +107,19 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     minimized_IEX_flux_dict = dict()
     for i in range(len(UFEt_rxn_list)):
         counter += 1
-        print(f"\nMinimizing IEX reaction {str(counter)} of {str(counter_max)} \
-              for {model.name}")
-        if maximized_UFEt_flux_list[i] != 0.:
+        print(
+            f"\nMinimizing IEX reaction {str(counter)} of {str(counter_max)} \
+              for {model.name}"
+        )
+        if maximized_UFEt_flux_list[i] != 0.0:
             # Store the old bounds for the UFEt reaction
             saved_bounds = model.reactions.get_by_id(UFEt_rxn_list[i]).bounds
 
             # Set the bounds for the UFEt reaction to the calculated maximum
-            model.reactions.get_by_id(UFEt_rxn_list[i]).bounds = \
-                (maximized_UFEt_flux_list[i], maximized_UFEt_flux_list[i])
+            model.reactions.get_by_id(UFEt_rxn_list[i]).bounds = (
+                maximized_UFEt_flux_list[i],
+                maximized_UFEt_flux_list[i],
+            )
 
             # Rename the UFEt reaction to match the metabolite name
             metabolite = UFEt_rxn_list[i].replace("UFEt_", "") + "[u]"
@@ -115,7 +129,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
                 # If it is an IEX reaction, minimize the reaction flux
                 if "IEX" in rxn.id:
                     model.objective = model.reactions.get_by_id(rxn.id)
-                    solution = model.optimize(objective_sense = "minimize")
+                    solution = model.optimize(objective_sense="minimize")
                     minimized_IEX_flux_dict[rxn.id] = solution.objective_value
                     print(f"{rxn.id}:\t{solution.objective_value}")
 
