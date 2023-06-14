@@ -108,7 +108,7 @@ _For more examples, please refer to the [tutorial.ipynb](...) Jupyter Notebook_
 <!-- A NOTE REGARDING MODEL COMPARTMENTS AND REACTIONS -->
 ## A Note Regarding Model Compartments and Reaction Types
 
-***The following information is based on inferred definitions from [Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html) and may not represent the original author's definitions. Moreover, these definitions are unlikely to be generalizable to alternative tools.***
+***The following information is based on inferred definitions from [Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html) and may not represent the original author's definitions. Furthermore, these definitions are unlikely to be generalizable to alternative tools. Nonetheless, we provide the following details if one were to apply MMTpy functions to models constructed using other tools.***
 
 ### Types of Compartments
 
