@@ -242,7 +242,7 @@ MMTpy was created on the basis of the Microbiome Modeling Toolbox by [Almut Hein
 
 The tools here were conceptualized by [Ali R. Zomorrodi, PhD.](https://orcid.org/0000-0002-9134-8082) and its elementary implementation was done by [Izzy Goodchild-Michelman](https://www.linkedin.com/in/isabella-goodchild-michelman-921bab196).
 
-MMTpy was developed by [Kevin Liu](https://dbmi.hms.harvard.edu/people/kevin-liu) within the [Zomorrodi lab](https://zomorrodi.mgh.harvard.edu/) at Massachusetts General Hospital under the mentorship of the Principal Investigator, Dr. [Ali R. Zomorrodi, PhD](https://orcid.org/0000-0002-9134-8082).
+MMTpy was developed by [Kevin Liu](https://dbmi.hms.harvard.edu/people/kevin-liu) within the [Zomorrodi lab](https://zomorrodi.mgh.harvard.edu/) at Massachusetts General Hospital under the mentorship of the Principal Investigator, [Dr. Ali R. Zomorrodi, PhD](https://orcid.org/0000-0002-9134-8082).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
