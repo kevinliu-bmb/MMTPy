@@ -4,13 +4,12 @@ import pandas as pd
 import pubchempy as pcp
 import re
 
-from cobra_utils import *
+from cobra_utils import print_logo
 
 
 def convert_string(s):
     """
-    Helper function that uses regular expressions to convert a string to a 
-    standard format.
+    Convert a string to a standard format for matching.
 
     Parameters
     ----------
@@ -43,8 +42,8 @@ def convert_string(s):
 
 def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv") -> None:
     """
-    Uses both direct matching and pubchempy to map the metabolite names detected
-    by GC-MS to VMH identifiers for a given GC-MS dataset.
+    Map the metabolite names detected by GC-MS to VMH identifiers for a given
+    GC-MS dataset.
 
     Parameters
     ----------
@@ -76,12 +75,12 @@ def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath
     vmh_db = pd.read_csv(vmh_db_filepath, index_col=0, header=0, delimiter="\t")
     gcms_data = pd.read_csv(gcms_filepath, index_col=0, header=0)
 
-    print(f"\n[START] Matching GC-MS names to VMH identifiers...")
+    print("\n[START] Matching GC-MS names to VMH identifiers...")
 
     # Create dictionaries for direct matching
     gcms_names_dict = {name: convert_string(name).lower() for name in \
                        gcms_data.columns[2:].to_list()}
-    vmh_names_dict = dict(zip(vmh_db["fullName"].index, vmh_db["fullName"]))
+    vmh_names_dict = dict(zip(vmh_db["fullName"].index, vmh_db["fullName"], strict=False))
 
     # Perform direct matching
     direct_matching_dict = {}
@@ -96,10 +95,10 @@ def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath
 
     # Match by pubchempy and vmh database
     # NOTE {vmh_id, matched_identifier}
-    vmh_cid_dict = dict(zip(vmh_db["pubChemId"].index, vmh_db["pubChemId"]))
-    vmh_inchikey_dict = dict(zip(vmh_db["inchiKey"].index, vmh_db["inchiKey"]))
-    vmh_inchistring_dict = dict(zip(vmh_db["inchiString"].index, vmh_db["inchiString"]))
-    vmh_smiles_dict = dict(zip(vmh_db["smile"].index, vmh_db["smile"]))
+    vmh_cid_dict = dict(zip(vmh_db["pubChemId"].index, vmh_db["pubChemId"], strict=False))
+    vmh_inchikey_dict = dict(zip(vmh_db["inchiKey"].index, vmh_db["inchiKey"], strict=False))
+    vmh_inchistring_dict = dict(zip(vmh_db["inchiString"].index, vmh_db["inchiString"], strict=False))
+    vmh_smiles_dict = dict(zip(vmh_db["smile"].index, vmh_db["smile"], strict=False))
 
     # Empty dictionary to store standardized names
     # NOTE {GC-MS name, matched_identifier}

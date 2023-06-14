@@ -18,7 +18,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     model_input : str or cobra.Model
         Path to a multi-species model in any COBRApy supported format or a 
         COBRApy model loaded into memory.
-    add_diet_1ba : bool, optional
+    add_1ba : bool, optional
         If True, will set diet 1ba bounds to the model before optimizing, by
         default False.
 
@@ -80,7 +80,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
         print(f"{rxn}:\t{solution.objective_value}")
 
     # Create a dictionary of the maximized UFEt fluxes
-    maximized_UFEt_flux_dict = dict(zip(UFEt_rxn_list, maximized_UFEt_flux_list))
+    maximized_UFEt_flux_dict = dict(zip(UFEt_rxn_list, maximized_UFEt_flux_list, strict = False))
 
     print(f"\n[COMPLETED] Part 1: maximization complete for {model.name}")
 

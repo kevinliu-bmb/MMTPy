@@ -1,14 +1,10 @@
 import os
-import sys
-import warnings
-import re
-from collections import defaultdict
 from math import isnan
 
 import cobra
 import pandas as pd
 
-from convert_names_to_vmh import match_names_to_vmh
+
 
 
 def print_logo(tool: str, tool_description: str, version: str):
@@ -23,7 +19,7 @@ def print_logo(tool: str, tool_description: str, version: str):
         The description of the tool.
     version : str
         The version of the tool.
-    
+
     Returns
     -------
     None
@@ -46,7 +42,7 @@ def print_logo(tool: str, tool_description: str, version: str):
 
 def load_model(model_path: str) -> cobra.Model:
     """
-    Loads a multi-species model into memory given a path to a model file in a
+    Load a multi-species model into memory given a path to a model file in a
     COBRApy supported format.
 
     Parameters
@@ -94,9 +90,9 @@ def load_model(model_path: str) -> cobra.Model:
 
 def set_default_bounds(model: cobra.Model) -> bool:
     """
-    Set the bounds of the model's reactions according to default conventions; prints the changes and
-    returns True if the bounds were different from the default state.
-    Conventions are based on Heinken et al. (2022), mgPipe models.
+    Set the bounds of the model's reactions according to default conventions;
+    prints the changes and returns True if the bounds were different from the
+    default state. Conventions are based on Heinken et al. (2022), mgPipe models.
 
     Parameters
     ----------
@@ -173,13 +169,13 @@ def set_default_bounds(model: cobra.Model) -> bool:
 
 def convert_model_format(model_path, output_path):
     """
-    Converts a mgPipe.m (Heinken et al., 2022) matlab model to a json model.
+    Convert a mgPipe.m (Heinken et al., 2022) matlab model to a json model.
 
     Parameters
     ----------
-    model_filepath : str
+    model_path : str
         Path to the model file.
-    output_filepath : str
+    output_path : str
         Path to the output file.
 
     Returns
@@ -214,7 +210,7 @@ def convert_model_format(model_path, output_path):
 
 def fetch_metabolomics(sample_id: str, gcms_filepath: str) -> dict:
     """
-    Reads in a .csv file of VMH name-matched GC-MS metabolomics data and returns
+    Read in a .csv file of VMH name-matched GC-MS metabolomics data and returns
     a dictionary of the VMH metabolite identifiers and their corresponding
     normalized values.
 
