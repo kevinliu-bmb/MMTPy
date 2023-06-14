@@ -5,8 +5,6 @@ import cobra
 import pandas as pd
 
 
-
-
 def print_logo(tool: str, tool_description: str, version: str):
     """
     Print the logo, tool name, and version for the tool.
@@ -120,34 +118,42 @@ def set_default_bounds(model: cobra.Model) -> bool:
     new_bounds = dict()
     for rxn in model.reactions:
         # Set the bounds of the fecal exchange (EX_met[fe]) reactions to be (-1000., 1000000.)
-        if rxn.id.startswith("EX_") and rxn.id.endswith("[fe]") and "microbeBiomass" not in rxn.id:
+        if (
+            rxn.id.startswith("EX_")
+            and rxn.id.endswith("[fe]")
+            and "microbeBiomass" not in rxn.id
+        ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            model.reactions.get_by_id(rxn.id).bounds = (-1000., 1000000.)
+            model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 1000000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the fecal exchange (EX_met[fe]) reactions for the microbeBiomass to be (-10000., 1000000.)
-        elif rxn.id.startswith("EX_") and rxn.id.endswith("[fe]") and "microbeBiomass" in rxn.id:
+        elif (
+            rxn.id.startswith("EX_")
+            and rxn.id.endswith("[fe]")
+            and "microbeBiomass" in rxn.id
+        ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            model.reactions.get_by_id(rxn.id).bounds = (-10000., 1000000.)
+            model.reactions.get_by_id(rxn.id).bounds = (-10000.0, 1000000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the fecal transport (UFEt_met) reactions to be (0., 1000000.)
         elif rxn.id.startswith("UFEt_"):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            model.reactions.get_by_id(rxn.id).bounds = (0., 1000000.)
+            model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the microbe secretion/uptake (microbe_IEX_met[u]tr) reactions to be (-1000., 1000.)
         elif "IEX" in rxn.id and rxn.id.endswith("[u]tr"):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            model.reactions.get_by_id(rxn.id).bounds = (-1000., 1000.)
+            model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 1000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the diet transport (DUt_met) reactions to be (0., 1000000.)
         elif rxn.id.startswith("DUt_"):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            model.reactions.get_by_id(rxn.id).bounds = (0., 1000000.)
+            model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the community biomass reaction to be (0.4, 1.)
-        elif rxn.id=="communityBiomass":
+        elif rxn.id == "communityBiomass":
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            model.reactions.get_by_id(rxn.id).bounds = (0.4, 1.)
+            model.reactions.get_by_id(rxn.id).bounds = (0.4, 1.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
 
     n_changed_bounds = 0
@@ -219,7 +225,7 @@ def fetch_metabolomics(sample_id: str, gcms_filepath: str) -> dict:
     sample_id : str
         The sample identifier of the model (e.g. Case_1, Control_1, etc.).
     gcms_filepath : str
-        Path to the GC-MS metabolomics data file that is 
+        Path to the GC-MS metabolomics data file that is
 
     Returns
     -------
@@ -250,7 +256,7 @@ def fetch_metabolomics(sample_id: str, gcms_filepath: str) -> dict:
     # Read in the GC-MS sample file
     if isinstance(gcms_filepath, str) and gcms_filepath.endswith(".csv"):
         print("\nLoading the metabolomics data...")
-        metab_data = pd.read_csv(gcms_filepath, sep = ",", index_col = 0)
+        metab_data = pd.read_csv(gcms_filepath, sep=",", index_col=0)
     else:
         raise TypeError("The filepath must be a path to a .csv file.")
 
@@ -258,12 +264,12 @@ def fetch_metabolomics(sample_id: str, gcms_filepath: str) -> dict:
     norm_metab_data = metab_data.div(metab_data.sum(axis=0), axis=1)
 
     # Check that the norm_metab_data sums to 1
-    assert norm_metab_data.sum(axis=0).all() == 1.
+    assert norm_metab_data.sum(axis=0).all() == 1.0
 
     # Gets the list of metabolites that are non-zero for the sample
     non_zero_sample_metabs_list = []
     for i in range(len(norm_metab_data[sample_id])):
-        if norm_metab_data[sample_id][i] != 0.:
+        if norm_metab_data[sample_id][i] != 0.0:
             non_zero_sample_metabs_list.append(norm_metab_data[sample_id].index[i])
 
     # Create a dict of unique metabolite names and GC-MS measurements
@@ -274,6 +280,8 @@ def fetch_metabolomics(sample_id: str, gcms_filepath: str) -> dict:
         if isinstance(value, pd.Series):
             sample_metabs_dict[met] = value.sum()
 
-    print(f"\n[DONE] Returning normalized sample-specific metabolomics values for {sample_id}.")
-    
+    print(
+        f"\n[DONE] Returning normalized sample-specific metabolomics values for {sample_id}."
+    )
+
     return sample_metabs_dict

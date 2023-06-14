@@ -1,8 +1,8 @@
 import os
+import re
 
 import pandas as pd
 import pubchempy as pcp
-import re
 
 from cobra_utils import print_logo
 
@@ -29,18 +29,22 @@ def convert_string(s):
         3. Add a hyphen between number and word if they are separated by space.
     """
     # Remove everything in parenthesis
-    s = re.sub(r'\s*\(.*?\)', '', s)
-    
+    s = re.sub(r"\s*\(.*?\)", "", s)
+
     # Convert '.' to ',' between numbers
-    s = re.sub(r'(\d)\.(\d)', r'\1,\2', s)
-    
+    s = re.sub(r"(\d)\.(\d)", r"\1,\2", s)
+
     # Add a hyphen between number and word if they are separated by space
-    s = re.sub(r'(\d) (\w)', r'\1-\2', s)
-    
+    s = re.sub(r"(\d) (\w)", r"\1-\2", s)
+
     return s
 
 
-def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv") -> None:
+def match_names_to_vmh(
+    gcms_filepath: str,
+    output_filepath: str,
+    vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
+) -> None:
     """
     Map the metabolite names detected by GC-MS to VMH identifiers for a given
     GC-MS dataset.
@@ -67,9 +71,11 @@ def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath
         {GC-MS name} {VMH identifier}
     """
 
-    print_logo(tool="match-names-to-vmh", \
-               tool_description="Matches metabolite names to VMH identifiers via pubchempy.", \
-               version="0.1.0")
+    print_logo(
+        tool="match-names-to-vmh",
+        tool_description="Matches metabolite names to VMH identifiers via pubchempy.",
+        version="0.1.0",
+    )
 
     # Load the data
     vmh_db = pd.read_csv(vmh_db_filepath, index_col=0, header=0, delimiter="\t")
@@ -78,9 +84,12 @@ def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath
     print("\n[START] Matching GC-MS names to VMH identifiers...")
 
     # Create dictionaries for direct matching
-    gcms_names_dict = {name: convert_string(name).lower() for name in \
-                       gcms_data.columns[2:].to_list()}
-    vmh_names_dict = dict(zip(vmh_db["fullName"].index, vmh_db["fullName"], strict=False))
+    gcms_names_dict = {
+        name: convert_string(name).lower() for name in gcms_data.columns[2:].to_list()
+    }
+    vmh_names_dict = dict(
+        zip(vmh_db["fullName"].index, vmh_db["fullName"], strict=False)
+    )
 
     # Perform direct matching
     direct_matching_dict = {}
@@ -90,14 +99,23 @@ def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath
                 direct_matching_dict[vmh_id] = gcms_name
 
     # Create a dict with key value pairs that remain unmatched for gcms_names_dict
-    unmatched_dict = {vmh_id: name for vmh_id, name in gcms_names_dict.items() if \
-                      name not in direct_matching_dict.values()}
+    unmatched_dict = {
+        vmh_id: name
+        for vmh_id, name in gcms_names_dict.items()
+        if name not in direct_matching_dict.values()
+    }
 
     # Match by pubchempy and vmh database
     # NOTE {vmh_id, matched_identifier}
-    vmh_cid_dict = dict(zip(vmh_db["pubChemId"].index, vmh_db["pubChemId"], strict=False))
-    vmh_inchikey_dict = dict(zip(vmh_db["inchiKey"].index, vmh_db["inchiKey"], strict=False))
-    vmh_inchistring_dict = dict(zip(vmh_db["inchiString"].index, vmh_db["inchiString"], strict=False))
+    vmh_cid_dict = dict(
+        zip(vmh_db["pubChemId"].index, vmh_db["pubChemId"], strict=False)
+    )
+    vmh_inchikey_dict = dict(
+        zip(vmh_db["inchiKey"].index, vmh_db["inchiKey"], strict=False)
+    )
+    vmh_inchistring_dict = dict(
+        zip(vmh_db["inchiString"].index, vmh_db["inchiString"], strict=False)
+    )
     vmh_smiles_dict = dict(zip(vmh_db["smile"].index, vmh_db["smile"], strict=False))
 
     # Empty dictionary to store standardized names
@@ -112,7 +130,7 @@ def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath
     for gcms_name, compound in unmatched_dict.items():
         try:
             # Get the compound information from PubChem
-            c = pcp.get_compounds(compound, 'name')
+            c = pcp.get_compounds(compound, "name")
             # If the compound was found, store its properties
             if c:
                 if c[0].iupac_name in vmh_names_dict.values():
@@ -156,12 +174,14 @@ def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath
                     print(f"\nMatched {gcms_name} to {vmh_id} using SMILES")
                     pubchempy_matched_dict[gcms_name] = vmh_id
 
-    print(f"\n{len(pubchempy_matched_dict)} of {len(gcms_data.columns)-2} VMH identifiers matched.")
+    print(
+        f"\n{len(pubchempy_matched_dict)} of {len(gcms_data.columns)-2} VMH identifiers matched."
+    )
 
     # If the output filepath does not exist, create it
     if not os.path.exists(output_filepath):
         os.makedirs(output_filepath)
-    
+
     if output_filepath[-1] != "/":
         output_filepath += "/"
 
@@ -172,4 +192,6 @@ def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath
         for key, value in pubchempy_matched_dict.items():
             f.write(f"{key}\t{value}\n")
 
-    print(f"\n[DONE] Matched GC-MS names to VMH identifiers and written to {key_output_filepath}")
+    print(
+        f"\n[DONE] Matched GC-MS names to VMH identifiers and written to {key_output_filepath}"
+    )
