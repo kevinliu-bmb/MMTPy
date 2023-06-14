@@ -98,7 +98,20 @@ To run the FBA simulations using COBRApy, run the ```optimize_model.py``` script
    python optimize_model.py
    ```
 
-_For more examples, please refer to the [tutorial.ipynb](...) Jupyter Notebook_
+Other convenient tools, such as ```set_default_bounds()``` for resetting the model reactions bounds and ```convert_model_format()``` to convert any COBRApy-supported model format to JSON format, can be called within a Python console after importing ```cobra_utils.py```. 
+
+   ```python
+   > from cobra_utils import *
+   > set_default_bounds(your_model)
+   > convert_model_format(your_model_path.mat, your_desired_output_path)
+   ```
+
+A novel feature we offer from this project is the ability to match metabolite names from GC-MS outputs that uses common names rather than IUPAC-standard names to VMH metabolite identifiers through the ```convert_names_to_vmh.py``` script and the included exhaustive list of VMH metabolites and their respective alternative identifiers in ```all_vmh_metabolites.tsv```, which enables several metabolite matching strategies, such as through InChIString, InChIKey, CID, and isomeric SMILES (only used as a last resort due to the possibility of stereoisomers), found under the ```~/data_dependencies/``` directory.
+
+   ```python
+   > from convert_names_to_vmh.py import *
+   > match_names_to_vmh(gcms_filepath=your_gcms_data_path.csv, output_filepath=your_desired_output_path)
+   ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
