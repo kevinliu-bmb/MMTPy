@@ -258,6 +258,6 @@ MMTpy was developed by [Kevin Liu](https://dbmi.hms.harvard.edu/people/kevin-liu
 [issues-shield]: https://img.shields.io/github/issues/kevinliu-bmb/MMTpy.svg?style=for-the-badge
 [issues-url]: https://github.com/kevinliu-bmb/MMTpy/issues
 [license-shield]: https://img.shields.io/github/license/kevinliu-bmb/MMTpy.svg?style=for-the-badge
-[license-url]: https://github.com/kevinliu-bmb/MMTpy/LICENSE
+[license-url]: https://github.com/kevinliu-bmb/MMTpy/blob/main/LICENSE
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/kevin-liu-
