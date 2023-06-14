@@ -41,19 +41,19 @@ def convert_string(s):
     return s
 
 
-def match_names_to_vmh(vmh_db_filepath: str = "~/data_dependencies/all_vmh_metabolites.tsv", gcms_filepath: str, output_filepath: str) -> None:
+def match_names_to_vmh(gcms_filepath: str, output_filepath: str, vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv") -> None:
     """
     Uses both direct matching and pubchempy to map the metabolite names detected
     by GC-MS to VMH identifiers for a given GC-MS dataset.
 
     Parameters
     ----------
-    vmh_db_filepath : str
-        Filepath to the VMH database.
     gcms_filepath : str
         Filepath to the GC-MS data.
     output_filepath : str
         Filepath for saving the matching keys.
+    vmh_db_filepath : str
+        Filepath to the VMH database of metabolites and their identifiers.
 
     Returns
     -------
