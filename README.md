@@ -67,12 +67,12 @@ Python-based tools for the processing and analysis of multi-species GEnome-scale
 <!-- GETTING STARTED -->
 ## Getting Started
 
-The following information will guide you through the installation of required Python module prerequisites.
-To get a local copy up and running follow these simple example steps.
+The following information will guide you through installing the required Python module prerequisites.
+To get a local copy up and running, follow these simple example steps.
 
 ### Prerequisites
 
-_Several core functionalities of MMTpy relies on the [COBRApy](https://github.com/opencobra/cobrapy) and [OptLang](https://github.com/opencobra/optlang) Python modules; please refer to ```requirements.txt``` for the full list of dependencies and/or use the following guide to install all required dependencies._
+_Several core functionalities of MMTpy rely on the [COBRApy](https://github.com/opencobra/cobrapy) and [OptLang](https://github.com/opencobra/optlang) Python modules; please refer to ```requirements.txt``` for the full list of dependencies and/or use the following guide to install all required dependencies._
 
 1. Clone the repo
    ```sh
@@ -101,7 +101,7 @@ To run the FBA simulations using COBRApy, run the ```optimize_model.py``` script
 Other convenient tools, such as ```set_default_bounds()``` for resetting the model reactions bounds and ```convert_model_format()``` to convert any COBRApy-supported model format to JSON format, can be called within a Python console after importing ```cobra_utils.py```. 
 
    ```python
-   > from cobra_utils import *
+   > from cobra_utils import set_default_bounds, convert_model_format
    > set_default_bounds(your_model)
    > convert_model_format(your_model_path.mat, your_desired_output_path)
    ```
@@ -109,7 +109,7 @@ Other convenient tools, such as ```set_default_bounds()``` for resetting the mod
 A novel feature we offer from this project is the ability to match metabolite names from GC-MS outputs that uses common names rather than IUPAC-standard names to VMH metabolite identifiers through the ```convert_names_to_vmh.py``` script and the included exhaustive list of VMH metabolites and their respective alternative identifiers in ```all_vmh_metabolites.tsv```, which enables several metabolite matching strategies, such as through InChIString, InChIKey, CID, and isomeric SMILES (only used as a last resort due to the possibility of stereoisomers), found under the ```~/data_dependencies/``` directory; as a fallback, a manually curated mapping file is also provided as ```manually_matched_keys.txt```, which enables the usage of the mapping function in the absence of internet access in addition to providing a more comprehensive mapping of GC-MS names to VMH identifiers.
 
    ```python
-   > from convert_names_to_vmh.py import *
+   > from match_names_to_vmh.py import match_names_to_vmh
    > match_names_to_vmh(gcms_filepath=your_gcms_data_path.csv, output_filepath=your_desired_output_path)
    ```
 
@@ -251,9 +251,9 @@ Project Link: [https://github.com/kevinliu-bmb/MMTpy](https://github.com/kevinli
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-MMTpy was created on the basis of the Microbiome Modeling Toolbox by [Almut Heinken](https://scholar.google.com/citations?user=4Lu-c34AAAAJ&hl=en&oi=ao) and [Ines Thiele](https://orcid.org/0000-0002-8071-7110). 
+MMTpy was created based on the Microbiome Modeling Toolbox by [Almut Heinken](https://scholar.google.com/citations?user=4Lu-c34AAAAJ&hl=en&oi=ao) and [Ines Thiele](https://orcid.org/0000-0002-8071-7110). 
 
-The tools here were conceptualized by [Ali R. Zomorrodi, PhD.](https://orcid.org/0000-0002-9134-8082) and its elementary implementation was done by [Izzy Goodchild-Michelman](https://www.linkedin.com/in/isabella-goodchild-michelman-921bab196).
+The tools here were conceptualized by [Ali R. Zomorrodi, PhD.](https://orcid.org/0000-0002-9134-8082), and its elementary implementation was done by [Izzy Goodchild-Michelman](https://www.linkedin.com/in/isabella-goodchild-michelman-921bab196).
 
 MMTpy was developed by [Kevin Liu](https://dbmi.hms.harvard.edu/people/kevin-liu) within the [Zomorrodi lab](https://zomorrodi.mgh.harvard.edu/) at Massachusetts General Hospital under the mentorship of the Principal Investigator, [Ali R. Zomorrodi, PhD](https://orcid.org/0000-0002-9134-8082).
 
