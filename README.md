@@ -20,7 +20,7 @@
   <h3 align="center">MMTpy</h3>
 
   <p align="center">
-    Microbiome Modeling Toolbox extensions for multi-species genome-scale modeles of metabolism
+    Microbiome Modeling Toolbox extensions for multi-species genome-scale models of metabolism
     <br />
     <a href="https://github.com/kevinliu-bmb/MMTpy/issues">Report Bug</a>
     ·
