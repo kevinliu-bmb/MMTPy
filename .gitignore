@@ -2,3 +2,4 @@ example_data/.DS_Store
 deprecated_code/*
 MMTpy_tutorial.ipynb
 .DS_Store
+__pycache__/*

@@ -44,10 +44,14 @@ def match_names_to_vmh(
     gcms_filepath: str,
     output_filepath: str,
     vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
+    manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
 ) -> None:
     """
     Map the metabolite names detected by GC-MS to VMH identifiers for a given
-    GC-MS dataset.
+    GC-MS dataset. The matching is performed in the following order:
+        1. Direct matching of GC-MS names to VMH identifiers.
+        2. Matching of GC-MS names to VMH identifiers via pubchempy.
+        3. Manual matching of GC-MS names to VMH identifiers.
 
     Parameters
     ----------
@@ -66,9 +70,9 @@ def match_names_to_vmh(
     -----
     The metabolomics data must be a .csv file with samples as the column headers
     and metabolite names as the row indicies. The metabolite names must be canonical
-    metabolite names (e.g. "L-Aspartate", "L-Asparagine", etc.). The matched keys
-    are saved as a tab-delimited .txt file with the following format:
-        {GC-MS name} {VMH identifier}
+    metabolite names (e.g. "L-Aspartate", "L-Asparagine", etc.). For matching via
+    pubchempy, internet access is required; otherwise, the matching will fallback
+    on a combination of direct and manual matching.
     """
 
     print_logo(
@@ -87,9 +91,7 @@ def match_names_to_vmh(
     gcms_names_dict = {
         name: convert_string(name).lower() for name in gcms_data.columns[2:].to_list()
     }
-    vmh_names_dict = dict(
-        zip(vmh_db["fullName"].index, vmh_db["fullName"], strict=False)
-    )
+    vmh_names_dict = dict(zip(vmh_db["fullName"].index, vmh_db["fullName"]))
 
     # Perform direct matching
     direct_matching_dict = {}
@@ -107,16 +109,10 @@ def match_names_to_vmh(
 
     # Match by pubchempy and vmh database
     # NOTE {vmh_id, matched_identifier}
-    vmh_cid_dict = dict(
-        zip(vmh_db["pubChemId"].index, vmh_db["pubChemId"], strict=False)
-    )
-    vmh_inchikey_dict = dict(
-        zip(vmh_db["inchiKey"].index, vmh_db["inchiKey"], strict=False)
-    )
-    vmh_inchistring_dict = dict(
-        zip(vmh_db["inchiString"].index, vmh_db["inchiString"], strict=False)
-    )
-    vmh_smiles_dict = dict(zip(vmh_db["smile"].index, vmh_db["smile"], strict=False))
+    vmh_cid_dict = dict(zip(vmh_db["pubChemId"].index, vmh_db["pubChemId"]))
+    vmh_inchikey_dict = dict(zip(vmh_db["inchiKey"].index, vmh_db["inchiKey"]))
+    vmh_inchistring_dict = dict(zip(vmh_db["inchiString"].index, vmh_db["inchiString"]))
+    vmh_smiles_dict = dict(zip(vmh_db["smile"].index, vmh_db["smile"]))
 
     # Empty dictionary to store standardized names
     # NOTE {GC-MS name, matched_identifier}
@@ -165,7 +161,9 @@ def match_names_to_vmh(
                 pubchempy_matched_dict[gcms_name] = vmh_id
 
     # Combine the direct matching dictionary with the pubchempy matched dictionary
-    pubchempy_matched_dict.update(direct_matching_dict)
+    pubchempy_matched_dict.update(
+        {value: key for key, value in direct_matching_dict.items()}
+    )
 
     if len(pubchempy_matched_dict) != len(gcms_data.index):
         for vmh_id, vmh_smiles in vmh_smiles_dict.items():
@@ -174,8 +172,23 @@ def match_names_to_vmh(
                     print(f"\nMatched {gcms_name} to {vmh_id} using SMILES")
                     pubchempy_matched_dict[gcms_name] = vmh_id
 
+    manual_matching = {}
+    with open(manual_matching_filepath, "r") as f:
+        for line in f:
+            name, vmh = line.split("\t")
+            if vmh.endswith("\n"):
+                vmh = vmh[:-1]
+            manual_matching[name] = vmh
+
+    max_matched_dict = {}
+    for name, id in manual_matching.items():
+        if id not in pubchempy_matched_dict.values():
+            max_matched_dict[name] = id
+
+    max_matched_dict.update(pubchempy_matched_dict)
+
     print(
-        f"\n{len(pubchempy_matched_dict)} of {len(gcms_data.columns)-2} VMH identifiers matched."
+        f"\n{len(max_matched_dict)} of {len(gcms_data.columns)-2} VMH identifiers matched."
     )
 
     # If the output filepath does not exist, create it
@@ -185,11 +198,11 @@ def match_names_to_vmh(
     if output_filepath[-1] != "/":
         output_filepath += "/"
 
-    key_output_filepath = f"{gcms_filepath.split('.')[-2]}_matched_key.txt"
+    key_output_filepath = f"{output_filepath}{gcms_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt"
 
     # Write out the matched identifiers to a .txt file
     with open(key_output_filepath, "w") as f:
-        for key, value in pubchempy_matched_dict.items():
+        for key, value in max_matched_dict.items():
             f.write(f"{key}\t{value}\n")
 
     print(

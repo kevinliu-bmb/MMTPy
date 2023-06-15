@@ -20,8 +20,8 @@ The following file was obtained from VMH on June 2, 2023, and the current defini
 
 (citation: Elmadfa, I. (2012). Oesterreichischer Ernaehrungsbericht 2012. Vienna: 424.)
 
-***An example GC-MS metabolomics dataset is provided based on the study published by Leonard et al. (2021), which includes 10 samples of IBD cases and 10 samples of non-IBD controls and includes measurements from multiple timepoints.***
+***An example GC-MS metabolomics dataset is provided based on the study published by Leonard et al. (2021), which includes data from 10 samples of IBD cases and 10 samples of non-IBD controls at a single timepoint.***
 
-- metabolomic_data_with_rel_timepoints.csv
+- metabolomics_data.csv
 
 (citation: Leonard MM, Valitutti F, Karathia H, et al. Microbiome signatures of progression toward celiac disease onset in at-risk children in a longitudinal prospective cohort study. Proc Natl Acad Sci U S A. 2021;118(29):e2020322118. doi:10.1073/pnas.2020322118)

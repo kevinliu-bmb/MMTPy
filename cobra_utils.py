@@ -1,8 +1,11 @@
 import os
+import sys
 from math import isnan
 
 import cobra
 import pandas as pd
+
+from match_names_to_vmh import match_names_to_vmh
 
 
 def print_logo(tool: str, tool_description: str, version: str):
@@ -214,74 +217,110 @@ def convert_model_format(model_path, output_path):
     print(f"\n[DONE] {model.name} converted to json format.")
 
 
-def fetch_metabolomics(sample_id: str, gcms_filepath: str) -> dict:
+def fetch_norm_sample_metabolomics_data(
+    model_filepath: str,
+    gcms_filepath: str,
+    match_key_output_filepath: str,
+    manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
+) -> dict:
     """
-    Read in a .csv file of VMH name-matched GC-MS metabolomics data and returns
-    a dictionary of the VMH metabolite identifiers and their corresponding
-    normalized values.
+    Generate a dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
 
     Parameters
     ----------
-    sample_id : str
-        The sample identifier of the model (e.g. Case_1, Control_1, etc.).
+    model_filepath : str
+        Filepath to the model.
     gcms_filepath : str
-        Path to the GC-MS metabolomics data file that is
+        Filepath to the GC-MS data.
+    match_key_output_filepath : str
+        Filepath to the directory where the matched key file will be saved.
+    manual_matching_filepath : str
+        Filepath to the manually matched key file.
 
     Returns
     -------
-    dict
-        Dictionary of the VMH metabolite identifiers and their corresponding
-        normalized values for the given model.
-
-    Raises
-    ------
-    TypeError
-        If the filepath is not a .csv file.
-
-    Notes
-    -----
-    The GC-MS metabolomics data file must be a .csv file with samples as the
-    column headers and metabolite names as the row headers. The sample identifiers
-    must be in the format of "Case_1", "Control_1", etc. The metabolite names
-    must be VMH identifiers. If the metabolite names are not VMH identifiers,
-    see the match_names_to_vmh() function.
-
-    TODO: match the metabolite names to VMH identifiers using the match_names_to_vmh() function
-    and add them as the row headers. If the metabolite names cannot be fully matched,
-    remove them and re-normalize the data.
+    vmh_id_values : dict
+        Dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
     """
 
-    print(f"\n[START] Fetching metabolomics data for {sample_id}...")
+    model = load_model(model_filepath)
 
-    # Read in the GC-MS sample file
-    if isinstance(gcms_filepath, str) and gcms_filepath.endswith(".csv"):
-        print("\nLoading the metabolomics data...")
-        metab_data = pd.read_csv(gcms_filepath, sep=",", index_col=0)
+    print(f"\n[START] Fetching metabolomics data for {model.name}...")
+
+    # Read metabolomics data
+    metabolomics_data = pd.read_csv(gcms_filepath, sep=",", index_col=0)
+    if match_key_output_filepath not in os.listdir():
+        os.mkdir(match_key_output_filepath)
+
+    if match_key_output_filepath[-1] != "/":
+        match_key_output_filepath += "/"
+
+    match_names_to_vmh(
+        gcms_filepath=gcms_filepath,
+        output_filepath=match_key_output_filepath,
+        manual_matching_filepath=manual_matching_filepath,
+    )
+
+    matched_metabolite_names = {}
+    with open(
+        f"{match_key_output_filepath}{gcms_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt",
+        "r",
+    ) as f:
+        matches = f.readlines()
+        if matches != "":
+            matches = [match.strip().split("\t") for match in matches]
+            for match in matches:
+                matched_metabolite_names[match[0]] = match[1]
+
+    idx_list = []
+    # Given the matched metabolite names, find the index where the metabolite is found in the metabolomics data
+    for col_name in metabolomics_data.columns:
+        if col_name in matched_metabolite_names.keys():
+            idx_list.append(metabolomics_data.columns.get_loc(col_name))
+
+    sample_id = []
+    # Given the model name, find which row the sample ID is in
+    for index in metabolomics_data.index:
+        if index in model.name:
+            sample_id.append(index)
+        elif index in model.name:
+            sample_id.append(index)
+
+    if len(sample_id) > 1:
+        print("Multiple sample IDs found in metabolomics data. Please check the data.")
+        sys.exit(1)
+    elif len(sample_id) == 0:
+        print("No sample ID found in metabolomics data. Please check the data.")
+        sys.exit(1)
     else:
-        raise TypeError("The filepath must be a path to a .csv file.")
+        sample_id = sample_id[0]
 
-    # Normalizes the metabolomics data
-    norm_metab_data = metab_data.div(metab_data.sum(axis=0), axis=1)
+    # Given a sample ID, get the metabolomics data for that sample
+    sample_metabolomic_data = metabolomics_data.loc[sample_id][min(idx_list) :]
 
-    # Check that the norm_metab_data sums to 1
-    assert norm_metab_data.sum(axis=0).all() == 1.0
+    # Create a dictionary of metabolite names and their concentrations
+    metabolite_raw_vals_dict = {
+        name: float(conc) for name, conc in sample_metabolomic_data.items()
+    }
 
-    # Gets the list of metabolites that are non-zero for the sample
-    non_zero_sample_metabs_list = []
-    for i in range(len(norm_metab_data[sample_id])):
-        if norm_metab_data[sample_id][i] != 0.0:
-            non_zero_sample_metabs_list.append(norm_metab_data[sample_id].index[i])
+    vmh_id_values = {}
+    for vmh_name, vmh_id in matched_metabolite_names.items():
+        for gcms_name, value in metabolite_raw_vals_dict.items():
+            if vmh_name == gcms_name:
+                vmh_id_values[vmh_id] = value
 
-    # Create a dict of unique metabolite names and GC-MS measurements
-    sample_metabs_dict = {}
-    for met in non_zero_sample_metabs_list:
-        sample_metabs_dict[met] = norm_metab_data[sample_id][met]
-    for met, value in sample_metabs_dict.items():
-        if isinstance(value, pd.Series):
-            sample_metabs_dict[met] = value.sum()
+    # Normalize the values
+    total = sum(vmh_id_values.values())
+    normalized_vmh_id_values = {k: v / total for k, v in vmh_id_values.items()}
+
+    assert sum(normalized_vmh_id_values.values()) == 1.0
+
+    print(
+        f"\nNumber of VMH ID-matched metabolites: {len(normalized_vmh_id_values)} of {len(metabolite_raw_vals_dict)}"
+    )
 
     print(
         f"\n[DONE] Returning normalized sample-specific metabolomics values for {sample_id}."
     )
 
-    return sample_metabs_dict
+    return normalized_vmh_id_values
