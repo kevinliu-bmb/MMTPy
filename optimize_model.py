@@ -139,10 +139,3 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     print(f"\n[COMPLETED] Part 2: minimization complete for {model.name}")
 
     return maximized_UFEt_flux_dict, minimized_IEX_flux_dict, model_rxn_bounds_dict
-
-
-input_path = "example_data/models/microbiota_model_diet_Case_1_18_month.json"
-
-# Run the function
-if __name__ == "__main__":
-    optimize_model(model_input=input_path)
