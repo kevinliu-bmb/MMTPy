@@ -79,8 +79,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     for rxn in UFEt_rxn_list:
         counter += 1
         print(
-            f"\nMaximizing UFEt reaction {str(counter)} of {str(counter_max)} \
-              for {model.name}"
+            f"\nMaximizing UFEt reaction {str(counter)} of {str(counter_max)} for {model.name}"
         )
         model.objective = rxn
         solution = model.optimize()
@@ -88,9 +87,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
         print(f"{rxn}:\t{solution.objective_value}")
 
     # Create a dictionary of the maximized UFEt fluxes
-    maximized_UFEt_flux_dict = dict(
-        zip(UFEt_rxn_list, maximized_UFEt_flux_list, strict=False)
-    )
+    maximized_UFEt_flux_dict = dict(zip(UFEt_rxn_list, maximized_UFEt_flux_list))
 
     print(f"\n[COMPLETED] Part 1: maximization complete for {model.name}")
 
@@ -108,8 +105,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     for i in range(len(UFEt_rxn_list)):
         counter += 1
         print(
-            f"\nMinimizing IEX reaction {str(counter)} of {str(counter_max)} \
-              for {model.name}"
+            f"\nMinimizing IEX reaction {str(counter)} of {str(counter_max)} for {model.name}"
         )
         if maximized_UFEt_flux_list[i] != 0.0:
             # Store the old bounds for the UFEt reaction
@@ -143,3 +139,10 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     print(f"\n[COMPLETED] Part 2: minimization complete for {model.name}")
 
     return maximized_UFEt_flux_dict, minimized_IEX_flux_dict, model_rxn_bounds_dict
+
+
+input_path = "example_data/models/microbiota_model_diet_Case_1_18_month.json"
+
+# Run the function
+if __name__ == "__main__":
+    optimize_model(model_input=input_path)
