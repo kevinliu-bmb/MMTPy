@@ -51,6 +51,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     # Add diet 1ba if desired
     if add_1ba:
         for rxn in model.reactions:
+            # TODO check if all related reactions are included
             if "Diet_" in rxn.id and rxn.lower_bound != 0:
                 if (
                     "dgchol" in rxn.id
