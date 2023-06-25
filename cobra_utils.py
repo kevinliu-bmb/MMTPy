@@ -213,17 +213,17 @@ def convert_model_format(model_path: str or cobra.Model, output_path: str = None
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    # if output_path.endswith("/"):
-    #     output_path = output_path[:-1]
-
-    converted_output_filepath = f"{output_path}/{model.name}.json"
+    if output_path.endswith("/"):
+        converted_output_filepath = f"{output_path}{model.name}.json"
+    else:
+        converted_output_filepath = f"{output_path}/{model.name}.json"
 
     cobra.io.save_json_model(model, converted_output_filepath)
 
     print(f"\n[DONE] {model.name} converted to json format.")
 
 
-def __convert_string(s):
+def convert_string(s):
     """
     Convert a string to a standard format for matching.
 
@@ -261,7 +261,7 @@ def match_names_to_vmh(
     output_filepath: str,
     vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
-    show_logo: bool = False
+    show_logo: bool = False,
 ) -> None:
     """
     Map the metabolite names detected by GC-MS to VMH identifiers for a given
@@ -295,7 +295,7 @@ def match_names_to_vmh(
     """
     # Define tool metadata
     tool = "match-names-to-vmh"
-    tool_description = "Matches metabolite names to VMH identifiers via pubchempy."
+    tool_description = "Matching of GC-MS metabolite names to VMH identifiers."
 
     if show_logo:
         print_logo(tool, tool_description, version)
@@ -308,7 +308,7 @@ def match_names_to_vmh(
 
     # Create dictionaries for direct matching
     gcms_names_dict = {
-        name: __convert_string(name).lower() for name in gcms_data.columns[2:].to_list()
+        name: convert_string(name).lower() for name in gcms_data.columns[2:].to_list()
     }
     vmh_names_dict = dict(zip(vmh_db["fullName"].index, vmh_db["fullName"]))
 
@@ -436,7 +436,7 @@ def fetch_norm_sample_metabolomics_data(
     existing_keys_path: str = None,
     match_key_output_filepath: str = None,
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
-    show_logo: bool = False
+    show_logo: bool = False,
 ) -> dict:
     """
     Generate a dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
@@ -462,12 +462,8 @@ def fetch_norm_sample_metabolomics_data(
 
     Returns
     -------
-    vmh_id_values : dict
+    dict
         Dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
-
-    Notes
-    -----
-    TODO Check cases for using existing keys or not.
     """
     tool = "fetch-norm-sample-metabomics"
     tool_description = "Gets the normalized metabolomics data for a sample"

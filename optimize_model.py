@@ -140,3 +140,9 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     print(f"\n[COMPLETED] Part 2: minimization complete for {model.name}")
 
     return maximized_UFEt_flux_dict, minimized_IEX_flux_dict, model_rxn_bounds_dict
+
+
+
+def optimization_workflow():
+    # TODO #6 create a workflow for calling the functions in the correct order
+    ...
