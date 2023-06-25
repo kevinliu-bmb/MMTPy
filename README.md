@@ -60,7 +60,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Python-based tools for the processing and analysis of multi-species GEnome-scale Models of Metabolism (GEM) that is compatible with multi-species community models constructed using the [Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html) by [Heinken et al. (2022)](https://academic.oup.com/bioinformatics/article/38/8/2367/6528309).
+Python-based tools for the processing and analysis of multi-species GEnome-scale Models (GEM) of Metabolism that is compatible with multi-species community models constructed using the [mgPipe.m pipeline of the Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html) by [Heinken et al. (2022)](https://academic.oup.com/bioinformatics/article/38/8/2367/6528309).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
