@@ -113,7 +113,6 @@ An additional feature we offer from this project is the ability to match metabol
    ```python
    > from cobra_utils import *
    > match_names_to_vmh(gcms_filepath="your_gcms_data_path.csv", output_filepath="your_desired_output_path") # matches any non-standard metabolite name to the VMH identifiers for subsequent analyses.
-   > 
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
