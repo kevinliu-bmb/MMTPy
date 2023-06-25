@@ -51,6 +51,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     # Add diet 1ba if desired
     if add_1ba:
         for rxn in model.reactions:
+            # TODO check if all related reactions are included
             if "Diet_" in rxn.id and rxn.lower_bound != 0:
                 if (
                     "dgchol" in rxn.id
@@ -139,3 +140,9 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     print(f"\n[COMPLETED] Part 2: minimization complete for {model.name}")
 
     return maximized_UFEt_flux_dict, minimized_IEX_flux_dict, model_rxn_bounds_dict
+
+
+
+def optimization_workflow():
+    # TODO #6 create a workflow for calling the functions in the correct order
+    ...
