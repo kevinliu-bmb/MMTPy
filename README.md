@@ -92,25 +92,27 @@ _Several core functionalities of MMTpy rely on the [COBRApy](https://github.com/
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-To run the FBA simulations using COBRApy, run the ```optimize_model.py``` script under the cloned GitHub repository folder
+To run the naïve FBA simulations without constraining metabolite uptake/secretion fluxes using COBRApy, import the ```optimize_model.py``` script using a Python console (tested on Python 3.9.16) under the cloned GitHub repository folder, as shown in the two examples below.
 
-   ```sh
-   python optimize_model.py
+   ```python
+   > from optimize_model import *
+   > optimize_model(model_input=model) # optimize a COBRApy model already loaded into memory.
+   > optimize_model(model_input="your_model_path.mat") # optimize a new COBRApy model.
    ```
 
 Other convenient tools, such as ```set_default_bounds()``` for resetting the model reactions bounds and ```convert_model_format()``` to convert any COBRApy-supported model format to JSON format, can be called within a Python console after importing ```cobra_utils.py```. 
 
    ```python
    > from cobra_utils import *
-   > set_default_bounds(your_model)
-   > convert_model_format(your_model_path.mat, your_desired_output_path)
+   > set_default_bounds(model=your_model) # (re)sets the upper- and lower-bounds of the model (excluding dietary constraints) to defaults.
+   > convert_model_format(model_path="your_model_path.mat", output_path="your_desired_output_path") # converts a user-supplied MATLAB model to JSON format.
    ```
 
 A novel feature we offer from this project is the ability to match metabolite names from GC-MS outputs that uses common names rather than IUPAC-standard names to VMH metabolite identifiers through the ```convert_names_to_vmh.py``` script and the included exhaustive list of VMH metabolites and their respective alternative identifiers in ```all_vmh_metabolites.tsv```, which enables several metabolite matching strategies, such as through InChIString, InChIKey, CID, and isomeric SMILES (only used as a last resort due to the possibility of stereoisomers), found under the ```~/data_dependencies/``` directory; as a fallback, a manually curated mapping file is also provided as ```manually_matched_keys.txt```, which enables the usage of the mapping function in the absence of internet access in addition to providing a more comprehensive mapping of GC-MS names to VMH identifiers.
 
    ```python
    > from cobra_utils import *
-   > match_names_to_vmh(gcms_filepath=your_gcms_data_path.csv, output_filepath=your_desired_output_path)
+   > match_names_to_vmh(gcms_filepath="your_gcms_data_path.csv", output_filepath="your_desired_output_path")
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
