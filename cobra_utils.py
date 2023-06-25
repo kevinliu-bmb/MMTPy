@@ -456,7 +456,7 @@ def fetch_norm_sample_metabolomics_data(
         Filepath to the directory where the matched key file will be saved.
         Defaults to None.
     manual_matching_filepath : str (optional)
-        Filepath to the manually matched key file.
+        Filepath to the manually matched key file; defaults to the work directory if a path is not supplied by the user.
     show_logo : bool (optional)
         Specification for printing the logo and function details.
 
@@ -464,6 +464,13 @@ def fetch_norm_sample_metabolomics_data(
     -------
     dict
         Dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
+
+    Raises
+    ------
+    TypeError
+        If model_input is not a cobra.Model or a filepath to a COBRApy model.
+    ValueError
+        If the model does not have a metabolomics data attribute.
     """
     tool = "fetch-norm-sample-metabomics"
     tool_description = "Gets the normalized metabolomics data for a sample"
@@ -473,6 +480,12 @@ def fetch_norm_sample_metabolomics_data(
 
     if type(model_input) == str:
         model = load_model(model_input)
+    elif type(model_input) == cobra.Model:
+        model = model_input
+    else:
+        raise TypeError(
+            "model_input must be a cobra.Model or a filepath to a COBRApy model"
+        )
 
     print(f"\n[START] Fetching metabolomics data for {model.name}...")
 
@@ -482,8 +495,11 @@ def fetch_norm_sample_metabolomics_data(
     if use_existing_matched_keys:
         match_key_output_filepath = existing_keys_path
     else:
-        if match_key_output_filepath not in os.listdir():
-            os.mkdir(match_key_output_filepath)
+        if match_key_output_filepath == None:
+            match_key_output_filepath = os.getcwd()
+            print(
+                f"\nNot using existing keys and path is not suppliedl; matched key file is stored under the work directory: {match_key_output_filepath}"
+            )
 
         if match_key_output_filepath[-1] != "/":
             match_key_output_filepath += "/"
