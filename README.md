@@ -97,7 +97,7 @@ To run the naïve FBA simulations without constraining metabolite uptake/secreti
    ```python
    > from optimize_model import *
    > optimize_model(model_input=model) # optimize a COBRApy model already loaded into memory.
-   > optimize_model(model_input="your_model_path.mat") # optimize a new COBRApy model.
+   > optimize_model(model_input="your_model_path.mat") # optimize an unloaded COBRApy model.
    ```
 
 Other convenient tools, such as ```set_default_bounds()``` for resetting the model reactions bounds and ```convert_model_format()``` to convert any COBRApy-supported model format to JSON format, can be called within a Python console after importing ```cobra_utils.py```. 
@@ -108,11 +108,12 @@ Other convenient tools, such as ```set_default_bounds()``` for resetting the mod
    > convert_model_format(model_path="your_model_path.mat", output_path="your_desired_output_path") # convert a COBRApy supported model format to JSON format.
    ```
 
-A novel feature we offer from this project is the ability to match metabolite names from GC-MS outputs that uses common names rather than IUPAC-standard names to VMH metabolite identifiers through the ```convert_names_to_vmh.py``` script and the included exhaustive list of VMH metabolites and their respective alternative identifiers in ```all_vmh_metabolites.tsv```, which enables several metabolite matching strategies, such as through InChIString, InChIKey, CID, and isomeric SMILES (only used as a last resort due to the possibility of stereoisomers), found under the ```~/data_dependencies/``` directory; as a fallback, a manually curated mapping file is also provided as ```manually_matched_keys.txt```, which enables the usage of the mapping function in the absence of internet access in addition to providing a more comprehensive mapping of GC-MS names to VMH identifiers.
+An additional feature we offer from this project is the ability to match metabolite names from GC-MS quantified and annotated output metabolite names, which can include common names or any other non-standard biochemical nomenclature, to VMH metabolite identifiers through the ```cobra_utils.py``` script and the included exhaustive list of VMH metabolites and their respective alternative identifiers in ```all_vmh_metabolites.tsv```. The usage of the VMH metabolite identifier database enables several metabolite matching strategies, such as through InChIString, InChIKey, CID, and isomeric SMILES (only used as a last resort due to the possibility of stereoisomers), found under the ```~/data_dependencies/``` directory. As a fallback strategy, a manually curated mapping file is also provided as ```manually_matched_keys.txt```, which enables the usage of the mapping function in the absence of internet access in addition to providing a more comprehensive mapping of GC-MS names to VMH identifiers; an additional strategy we use in such scenarios is the usage of BIGG identifiers in-place of VMH identifiers that are built-in to the model metabolites; this strategy is justified by the common usage of BIGG identifiers as VMH identifiers in the [mgPipe.m pipeline of the Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html) by [Heinken et al. (2022)](https://academic.oup.com/bioinformatics/article/38/8/2367/6528309).
 
    ```python
    > from cobra_utils import *
-   > match_names_to_vmh(gcms_filepath="your_gcms_data_path.csv", output_filepath="your_desired_output_path") # if output_filepath is not supplied, the matched key file will be saved at the working directory.
+   > match_names_to_vmh(gcms_filepath="your_gcms_data_path.csv", output_filepath="your_desired_output_path") # matches any non-standard metabolite name to the VMH identifiers for subsequent analyses.
+   > 
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
