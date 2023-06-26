@@ -20,6 +20,7 @@ Galactose	gal
 3-Hydroxyphenylacetic acid	3hphac
 N-Acetyl-D-galactosamine	acgal
 Arabinose (peak 1)	arab_L
+Arabinose (peak 2)	arab_L
 Arabinopyranose	arab_L
 Glucose	glc_D
 Glycine	gly

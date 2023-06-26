@@ -50,3 +50,4 @@ Acetylgalactosamine	acgal
 Sebacic acid	sebacid
 Galactose	gal
 Xylitol	xylt
+Laurate	ddca
