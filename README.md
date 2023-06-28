@@ -203,8 +203,7 @@ __Fecal exchange reactions:__
 
 - [x] Add FBA simulations feature using the [COBRApy](https://github.com/opencobra/cobrapy) module
 - [x] Add non-standardized metabolite name mapping to [Virtual Metabolic Human (VMH)](https://www.vmh.life/) identifiers feature
-- [ ] Add FBA simulations feature using the [OptLang](https://github.com/opencobra/optlang) module
-- [ ] Add metabolomic data-constrained optimization feature using the [OptLang](https://github.com/opencobra/optlang) module
+- [x] Add metabolomic data-constrained optimization feature using the [COBRApy](https://github.com/opencobra/cobrapy) module
 - [ ] Add multi-species model creation with gap-filling feature 
 
 See the [open issues](https://github.com/kevinliu-bmb/MMTpy/issues) for a full list of proposed features (and known issues).
