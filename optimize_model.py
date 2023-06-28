@@ -3,7 +3,7 @@ import cobra
 from cobra_utils import load_model
 
 
-def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> dict:
+def optimize_model(model_input: cobra.Model or str, add_1ba: bool = False) -> dict:
     """
     Optimizes a multi-species model of metabolism by maximizing the flux through
     all fecal transporter (UFEt) reactions and minimizing the flux through all
@@ -90,7 +90,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     # Create a dictionary of the maximized UFEt fluxes
     maximized_UFEt_flux_dict = dict(zip(UFEt_rxn_list, maximized_UFEt_flux_list))
 
-    print(f"\n[COMPLETED] Part 1: maximization complete for {model.name}")
+    print(f"\n[DONE] Part 1: maximization complete for {model.name}")
 
     #########################################################
     # Part 2: minimize the flux through all IEX reactions
@@ -106,7 +106,7 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     for i in range(len(UFEt_rxn_list)):
         counter += 1
         print(
-            f"\nMinimizing IEX reaction {str(counter)} of {str(counter_max)} for {model.name}"
+            f"\n\tMinimizing IEX reaction {str(counter)} of {str(counter_max)} for {model.name}"
         )
         if maximized_UFEt_flux_list[i] != 0.0:
             # Store the old bounds for the UFEt reaction
@@ -137,6 +137,6 @@ def optimize_model(model_input: str or cobra.Model, add_1ba: bool = False) -> di
     model_rxn_bounds_dict = dict()
     for rxn in model.reactions:
         model_rxn_bounds_dict[rxn.id] = rxn.bounds
-    print(f"\n[COMPLETED] Part 2: minimization complete for {model.name}")
+    print(f"\n[DONE] Part 2: minimization complete for {model.name}")
 
     return maximized_UFEt_flux_dict, minimized_IEX_flux_dict, model_rxn_bounds_dict

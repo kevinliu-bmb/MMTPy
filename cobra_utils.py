@@ -257,6 +257,7 @@ def convert_string(s):
 
 
 def match_names_to_vmh(
+    # model_input: str or cobra.Model,
     gcms_filepath: str,
     output_filepath: str,
     vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
@@ -266,9 +267,10 @@ def match_names_to_vmh(
     """
     Map the metabolite names detected by GC-MS to VMH identifiers for a given
     GC-MS dataset. The matching is performed in the following order:
-        1. Direct matching of GC-MS names to VMH identifiers.
+        1. Direct matching of GC-MS names to VMH identifiers using the VMH database.
         2. Matching of GC-MS names to VMH identifiers via pubchempy.
         3. Manual matching of GC-MS names to VMH identifiers.
+        [FIXME] 4. Direct matching of GC-MS names to BIGG identifiers using the COBRApy model.
 
     Parameters
     ----------
@@ -306,6 +308,9 @@ def match_names_to_vmh(
 
     print("\n[START] Matching GC-MS names to VMH identifiers...")
 
+    print(
+        "\n\t[1/3] Direct matching of GC-MS names to VMH identifiers using the VMH database."
+    )
     # Create dictionaries for direct matching
     gcms_names_dict = {
         name: convert_string(name).lower() for name in gcms_data.columns[2:].to_list()
@@ -326,6 +331,7 @@ def match_names_to_vmh(
         if name not in direct_matching_dict.values()
     }
 
+    print("\n\t[2/3] Matching of GC-MS names to VMH identifiers via PubChemPy.")
     # Match by pubchempy and vmh database
     # NOTE {vmh_id, matched_identifier}
     vmh_cid_dict = dict(zip(vmh_db["pubChemId"].index, vmh_db["pubChemId"]))
@@ -366,17 +372,17 @@ def match_names_to_vmh(
     for vmh_id, vmh_inchikey in vmh_inchikey_dict.items():
         for gcms_name, pubchempy_inchikey in inchikey_names.items():
             if vmh_inchikey != "nan" and vmh_inchikey == pubchempy_inchikey:
-                print(f"\nMatched {gcms_name} to {vmh_id} using InChIKey")
+                print(f"\tMatched {gcms_name} to {vmh_id} using InChIKey")
                 pubchempy_matched_dict[gcms_name] = vmh_id
     for vmh_id, vmh_cid in vmh_cid_dict.items():
         for gcms_name, pubchempy_cid in cid_names.items():
             if vmh_cid != "nan" and vmh_cid == pubchempy_cid:
-                print(f"\nMatched {gcms_name} to {vmh_id} using CID")
+                print(f"\tMatched {gcms_name} to {vmh_id} using CID")
                 pubchempy_matched_dict[gcms_name] = vmh_id
     for vmh_id, vmh_inchi in vmh_inchistring_dict.items():
         for gcms_name, pubchempy_inchi in inchi_names.items():
             if vmh_inchi != "nan" and vmh_inchi == pubchempy_inchi:
-                print(f"\nMatched {gcms_name} to {vmh_id} using InChI")
+                print(f"\tMatched {gcms_name} to {vmh_id} using InChI")
                 pubchempy_matched_dict[gcms_name] = vmh_id
 
     # Combine the direct matching dictionary with the pubchempy matched dictionary
@@ -391,6 +397,9 @@ def match_names_to_vmh(
                     print(f"\nMatched {gcms_name} to {vmh_id} using SMILES")
                     pubchempy_matched_dict[gcms_name] = vmh_id
 
+    print(
+        "\n\t[3/3] Matching of GC-MS names to VMH identifiers via manual matching database."
+    )
     manual_matching = {}
     with open(manual_matching_filepath, "r") as f:
         for line in f:
@@ -405,6 +414,42 @@ def match_names_to_vmh(
             max_matched_dict[name] = id
 
     max_matched_dict.update(pubchempy_matched_dict)
+
+    # # FIXME Check if it is worth fixing this
+    # if type(model_input) == str:
+    #     model = load_model(model_input)
+    # else:
+    #     model = model_input
+    # print(
+    #     "\n\t[4/4] Matching of GC-MS names to VMH identifiers via model metabolite names."
+    # )
+    # # Get a list of unmatched GC-MS names
+    # unmatched_names = [
+    #     name for name in gcms_data.columns if name not in max_matched_dict.keys()
+    # ]
+    # for metab in model.metabolites:
+    #     for name in unmatched_names:
+    #         model_metab_lower = metab.name.lower()
+    #         unmatched_metab_lower = name.lower()
+    #         # If the metab.id ends with a square bracket, remove it and its contents
+    #         if metab.id.endswith("]"):
+    #             model_metab_id = metab.id.split("[")[0]
+    #             print(f"model_metab_id: {model_metab_id}\nOG metabolite ID: {metab.id}")
+    #         # If metab.id.split("_")[-2] is a single character string, keep the last two elements after splitting by "_"
+    #         # If there are more than two elements after splitting by "_", keep the last element
+    #         if (
+    #             len(model_metab_id.split("_")) > 1
+    #             and len(model_metab_id.split("_")[-2]) == 1
+    #             and len(model_metab_id.split("_")[-1]) > 1
+    #         ):
+    #             model_metab_id = "_".join(model_metab_id.split("_")[-2:])
+    #         else:
+    #             model_metab_id = model_metab_id.split("_")[-1]
+    #         if unmatched_metab_lower in model_metab_lower:
+    #             print(
+    #                 f"\tMatched the GC-MS name {name} to {model_metab_id} using metabolite name {metab.name}"
+    #             )
+    #             max_matched_dict[name] = model_metab_id
 
     print(
         f"\n{len(max_matched_dict)} of {len(gcms_data.columns)-2} VMH identifiers matched."
@@ -432,9 +477,9 @@ def match_names_to_vmh(
 def fetch_norm_sample_metabolomics_data(
     model_input: cobra.Model or str,
     gcms_filepath: str,
+    match_key_output_filepath: str,
     use_existing_matched_keys: bool = False,
     existing_keys_path: str = None,
-    match_key_output_filepath: str = None,
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
     show_logo: bool = False,
 ) -> dict:
@@ -447,16 +492,17 @@ def fetch_norm_sample_metabolomics_data(
         The COBRApy model loaded into memory or a file path to the model
     gcms_filepath : str
         Filepath to the GC-MS data.
+    match_key_output_filepath : str
+        Filepath to the directory where the matched key file will be saved. If
+        the path is not supplied, the output will be saved in the working
+        directory by default.
     use_existing_matched_keys : bool
         Whether to use existing matched keys from match_names_to_vmh().
     existing_keys_path : str (optional)
         If use_existing_matched_keys is true, load the keys.
         Defaults to None.
-    match_key_output_filepath : str (optional)
-        Filepath to the directory where the matched key file will be saved.
-        Defaults to None.
     manual_matching_filepath : str (optional)
-        Filepath to the manually matched key file.
+        Filepath to the manually matched key file; defaults to the work directory if a path is not supplied by the user.
     show_logo : bool (optional)
         Specification for printing the logo and function details.
 
@@ -464,6 +510,13 @@ def fetch_norm_sample_metabolomics_data(
     -------
     dict
         Dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
+
+    Raises
+    ------
+    TypeError
+        If model_input is not a cobra.Model or a filepath to a COBRApy model.
+    ValueError
+        If the model does not have a metabolomics data attribute.
     """
     tool = "fetch-norm-sample-metabomics"
     tool_description = "Gets the normalized metabolomics data for a sample"
@@ -473,6 +526,12 @@ def fetch_norm_sample_metabolomics_data(
 
     if type(model_input) == str:
         model = load_model(model_input)
+    elif type(model_input) == cobra.Model:
+        model = model_input
+    else:
+        raise TypeError(
+            "model_input must be a cobra.Model or a filepath to a COBRApy model"
+        )
 
     print(f"\n[START] Fetching metabolomics data for {model.name}...")
 
@@ -482,13 +541,17 @@ def fetch_norm_sample_metabolomics_data(
     if use_existing_matched_keys:
         match_key_output_filepath = existing_keys_path
     else:
-        if match_key_output_filepath not in os.listdir():
-            os.mkdir(match_key_output_filepath)
+        if match_key_output_filepath == None:
+            match_key_output_filepath = os.getcwd()
+            print(
+                f"\nNot using existing keys and path is not suppliedl; matched key file is stored under the work directory: {match_key_output_filepath}"
+            )
 
         if match_key_output_filepath[-1] != "/":
             match_key_output_filepath += "/"
 
         match_names_to_vmh(
+            # model_input=model,
             gcms_filepath=gcms_filepath,
             output_filepath=match_key_output_filepath,
             manual_matching_filepath=manual_matching_filepath,
