@@ -104,7 +104,7 @@ Other convenient tools, such as ```set_default_bounds()``` for resetting the mod
 
    ```python
    > from cobra_utils import *
-   > set_default_bounds(model=your_model) # (re)set the bounds of the model (excluding dietary constraints) to default values.
+   > set_default_bounds(model=your_model, source="MMTpy") # (re)set the bounds of the model (excluding dietary constraints) to default values based on MMTpy conventions.
    > convert_model_format(model_path="your_model_path.mat", output_path="your_desired_output_path") # convert a COBRApy supported model format to JSON format.
    ```
 
@@ -141,7 +141,7 @@ __There are five types of compartments used in GEMs:__
 
 __Details__
 
-- The [c] compartment is the cytoplasmic space, which is where most of the microbe internal metabolic reactions occur. 
+- The [c] compartment is the cytoplasmic space, where most of the microbe's internal metabolic reactions occur. 
 
 - The [p] compartment is the periplasmic space, which is the space between the inner and outer membranes of Gram-negative bacteria. 
 
@@ -191,9 +191,9 @@ __Fecal exchange reactions:__
 
 - Reversible reaction
 
-- By default, has bounds of (-1000., 1000000.).*
+- Has bounds of (-1000., 1000000.) according to the [Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html)* and bounds of (0., 1000000.) according to MMTpy conventions.
 
-*Note: fecal exchange reactions for the "microbeBiomass" typically has bounds of (-10000., 1000000.).
+*Note: fecal exchange reactions for the "microbeBiomass" have bounds of (-10000., 1000000.).
 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
