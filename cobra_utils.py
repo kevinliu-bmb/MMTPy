@@ -1,12 +1,10 @@
 import os
 import re
-import sys
 from math import isnan
 
 import cobra
 import pandas as pd
 import pubchempy as pcp
-
 
 version = "0.1.0"
 
@@ -70,7 +68,7 @@ def load_model(model_path: str) -> cobra.Model:
     if not os.path.exists(model_path):
         raise ValueError(f"Model path does not exist: {model_path}")
 
-    print(f"\n[START] Loading model from {model_path}...")
+    print(f"\n[Loading model from {model_path}]")
 
     if model_path.endswith(".xml"):
         model = cobra.io.read_sbml_model(model_path)
@@ -87,21 +85,31 @@ def load_model(model_path: str) -> cobra.Model:
 
     model.name = os.path.basename(model_path).split(".")[0]
 
-    print(f"\n[DONE] {model.name} loaded.")
+    print(f"\n[{model.name} loaded]")
 
     return model
 
 
-def set_default_bounds(model: cobra.Model) -> bool:
+def set_default_bounds(
+    model: cobra.Model, source: str = "MMTpy", rxn_type: str = "all"
+) -> bool:
     """
-    Set the bounds of the model's reactions according to default conventions;
+    Set the bounds of the model's reactions according to conventions;
     prints the changes and returns True if the bounds were different from the
-    default state. Conventions are based on Heinken et al. (2022), mgPipe models.
+    default state.
+    Conventional bounds can either be set based on Heinken et al. (2022), mgPipe
+    models or be set based on MMTpy conventions.
 
     Parameters
     ----------
     model : cobra.Model
         The model whose reactions' bounds are to be set.
+    source : str, optional
+        The definition of conventional bounds, by default "MMTpy"; options are of
+        either "MMTpy" or "MATLAB".
+    rxn_type : str, optional
+        The type of reactions whose bounds are to be set, by default "all";
+        options are of either "all", "FEX", "UFEt", "IEX", "DUt", or "commBiomass".
 
     Returns
     -------
@@ -110,15 +118,22 @@ def set_default_bounds(model: cobra.Model) -> bool:
 
     Notes
     -----
-    The conventions are as follows:
+    The conventions are as follows based on Heinken et al. (2022), mgPipe models:
     1. Set the bounds of the fecal exchange (EX_met[fe]) reactions for metabolites to be (-1000., 1000000.)
     2. Set the bounds of the fecal exchange (EX_met[fe]) reaction for "microbeBiomass" to be (-10000., 1000000.)
     3. Set the bounds of the fecal transport (UFEt_met) reactions to be (0., 1000000.)
     4. Set the bounds of the microbe secretion/uptake (microbe_IEX_met[u]tr) reactions to be (-1000., 1000.)
     5. Set the bounds of the community biomass reaction to be (0.4, 1.)
+
+    The default bounds for MMTpy are as follows:
+    1. Set the bounds of the fecal exchange (EX_met[fe]) reactions for metabolites to be (0., 1000000.)
+    2. Set the bounds of the fecal exchange (EX_met[fe]) reaction for "microbeBiomass" to be (0., 1000000.)
+    3. Set the bounds of the fecal transport (UFEt_met) reactions to be (0., 1000000.)
+    4. Set the bounds of the microbe secretion/uptake (microbe_IEX_met[u]tr) reactions to be (-1000., 1000.)
+    5. Set the bounds of the community biomass reaction to be (0.4, 1.)
     """
 
-    print("\n[START] Setting default bounds...")
+    print(f"\n[Setting bounds for {rxn_type} reactions using {source} defaults]")
 
     saved_bounds = dict()
     new_bounds = dict()
@@ -128,36 +143,50 @@ def set_default_bounds(model: cobra.Model) -> bool:
             rxn.id.startswith("EX_")
             and rxn.id.endswith("[fe]")
             and "microbeBiomass" not in rxn.id
+            and rxn_type in ["all", "FEX"]
         ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 1000000.0)
+            if source == "MMTpy":
+                model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
+            elif source == "MATLAB":
+                model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 1000000.0)
+            else:
+                raise ValueError(f"Source {source} not supported")
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the fecal exchange (EX_met[fe]) reactions for the microbeBiomass to be (-10000., 1000000.)
         elif (
             rxn.id.startswith("EX_")
             and rxn.id.endswith("[fe]")
             and "microbeBiomass" in rxn.id
+            and rxn_type in ["all", "FEX"]
         ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            model.reactions.get_by_id(rxn.id).bounds = (-10000.0, 1000000.0)
+            if source == "MMTpy":
+                model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
+            elif source == "MATLAB":
+                model.reactions.get_by_id(rxn.id).bounds = (-10000.0, 1000000.0)
+            else:
+                raise ValueError(f"Source {source} not supported")
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the fecal transport (UFEt_met) reactions to be (0., 1000000.)
-        elif rxn.id.startswith("UFEt_"):
+        elif rxn.id.startswith("UFEt_") and rxn_type in ["all", "UFEt"]:
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the microbe secretion/uptake (microbe_IEX_met[u]tr) reactions to be (-1000., 1000.)
-        elif "IEX" in rxn.id and rxn.id.endswith("[u]tr"):
+        elif (
+            "IEX" in rxn.id and rxn.id.endswith("[u]tr") and rxn_type in ["all", "IEX"]
+        ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 1000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the diet transport (DUt_met) reactions to be (0., 1000000.)
-        elif rxn.id.startswith("DUt_"):
+        elif rxn.id.startswith("DUt_") and rxn_type in ["all", "DUt"]:
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the community biomass reaction to be (0.4, 1.)
-        elif rxn.id == "communityBiomass":
+        elif rxn.id == "communityBiomass" and rxn_type in ["all", "commBiomass"]:
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             model.reactions.get_by_id(rxn.id).bounds = (0.4, 1.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
@@ -166,20 +195,24 @@ def set_default_bounds(model: cobra.Model) -> bool:
     # Print out the changes
     for rxn, bounds in saved_bounds.items():
         if bounds != new_bounds[rxn]:
-            print(f"Changed bounds for {rxn} from {bounds} to {new_bounds[rxn]}")
+            print(f"\tChanged bounds for {rxn} from {bounds} to {new_bounds[rxn]}")
             n_changed_bounds += 1
 
-    if n_changed_bounds > 0:
-        bounds_changed = True
-        print(f"\n[DONE] Changed bounds for {n_changed_bounds} reactions.")
-    else:
+    if n_changed_bounds == 0:
         bounds_changed = False
-        print("\n[DONE] No bounds were changed.")
+        print("\n\tNo bounds were changed")
+    else:
+        bounds_changed = True
+        print(
+            f"\n\tChanged {n_changed_bounds}/{len(saved_bounds)} {rxn_type} reaction bounds for {model.name}"
+        )
 
     return bounds_changed
 
 
-def convert_model_format(model_path: str or cobra.Model, output_path: str = None):
+def convert_model_format(
+    model_path: str or cobra.Model, output_path: str = None
+) -> None:
     """
     Convert a mgPipe.m (Heinken et al., 2022) MATLAB model to a json model.
 
@@ -203,7 +236,7 @@ def convert_model_format(model_path: str or cobra.Model, output_path: str = None
     else:
         model = model_path
 
-    print(f"\n[START] Converting model {model.name} to json format...")
+    print(f"\n[Converting model {model.name} to json format]")
 
     # Convert the metabolite charge to a string if it is NaN
     for metab in model.metabolites:
@@ -220,10 +253,10 @@ def convert_model_format(model_path: str or cobra.Model, output_path: str = None
 
     cobra.io.save_json_model(model, converted_output_filepath)
 
-    print(f"\n[DONE] {model.name} converted to json format.")
+    print(f"\n[{model.name} converted to json format]")
 
 
-def convert_string(s):
+def convert_string(s) -> str:
     """
     Convert a string to a standard format for matching.
 
@@ -234,7 +267,7 @@ def convert_string(s):
 
     Returns
     -------
-    s : str
+    str
         Converted string.
 
     Notes
@@ -257,31 +290,26 @@ def convert_string(s):
 
 
 def match_names_to_vmh(
-    # model_input: str or cobra.Model,
-    gcms_filepath: str,
+    mbx_filepath: str,
     output_filepath: str,
     vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
-    show_logo: bool = False,
 ) -> None:
     """
-    Map the metabolite names detected by GC-MS to VMH identifiers for a given
-    GC-MS dataset. The matching is performed in the following order:
-        1. Direct matching of GC-MS names to VMH identifiers using the VMH database.
-        2. Matching of GC-MS names to VMH identifiers via pubchempy.
-        3. Manual matching of GC-MS names to VMH identifiers.
-        [FIXME] 4. Direct matching of GC-MS names to BIGG identifiers using the COBRApy model.
+    Map the metabolite names detected by MBX to VMH identifiers for a given
+    MBX dataset. The matching is performed in the following order:
+        1. Direct matching of MBX names to VMH identifiers using the VMH database.
+        2. Matching of MBX names to VMH identifiers via pubchempy.
+        3. Manual matching of MBX names to VMH identifiers.
 
     Parameters
     ----------
-    gcms_filepath : str
-        Filepath to the GC-MS data.
+    mbx_filepath : str
+        Filepath to the MBX data.
     output_filepath : str
-        Filepath for saving the matching keys.
+        Filepath (including .txt file name) for saving the matching keys.
     vmh_db_filepath : str
         Filepath to the VMH database of metabolites and their identifiers.
-    show_logo : bool
-        Specification for printing the logo and function details.
 
     Returns
     -------
@@ -293,114 +321,110 @@ def match_names_to_vmh(
     and metabolite names as the row indicies. The metabolite names must be canonical
     metabolite names (e.g. "L-Aspartate", "L-Asparagine", etc.). For matching via
     pubchempy, internet access is required; otherwise, the matching will fallback
-    on a combination of direct and manual matching.
+    on direct and manual matching.
     """
-    # Define tool metadata
-    tool = "match-names-to-vmh"
-    tool_description = "Matching of GC-MS metabolite names to VMH identifiers."
-
-    if show_logo:
-        print_logo(tool, tool_description, version)
 
     # Load the data
-    vmh_db = pd.read_csv(vmh_db_filepath, index_col=0, header=0, delimiter="\t")
-    gcms_data = pd.read_csv(gcms_filepath, index_col=0, header=0)
+    vmh_db_df = pd.read_csv(vmh_db_filepath, index_col=0, header=0, delimiter="\t")
+    mbx_data_df = pd.read_csv(mbx_filepath, index_col=0, header=0)
 
-    print("\n[START] Matching GC-MS names to VMH identifiers...")
+    print("\n[Matching MBX names to VMH identifiers]")
 
     print(
-        "\n\t[1/3] Direct matching of GC-MS names to VMH identifiers using the VMH database."
+        "\n\t[1/3] Direct matching of MBX names to VMH identifiers using the VMH database"
     )
     # Create dictionaries for direct matching
-    gcms_names_dict = {
-        name: convert_string(name).lower() for name in gcms_data.columns[2:].to_list()
+    mbx_names_dict = {
+        name: convert_string(name).lower() for name in mbx_data_df.columns[2:].to_list()
     }
-    vmh_names_dict = dict(zip(vmh_db["fullName"].index, vmh_db["fullName"]))
+    vmh_names_dict = dict(zip(vmh_db_df["fullName"].index, vmh_db_df["fullName"]))
 
     # Perform direct matching
-    direct_matching_dict = {}
+    direct_matching_dict = dict()
     for vmh_id, vmh_name in vmh_names_dict.items():
-        for gcms_name, gcms_alt_name in gcms_names_dict.items():
-            if gcms_alt_name.lower() == vmh_name.lower():
-                direct_matching_dict[vmh_id] = gcms_name
+        for mbx_name, mbx_alt_name in mbx_names_dict.items():
+            if mbx_alt_name.lower() == vmh_name.lower():
+                direct_matching_dict[vmh_id] = mbx_name
 
-    # Create a dict with key value pairs that remain unmatched for gcms_names_dict
+    # Create a dict with key value pairs that remain unmatched for mbx_names_dict
     unmatched_dict = {
         vmh_id: name
-        for vmh_id, name in gcms_names_dict.items()
+        for vmh_id, name in mbx_names_dict.items()
         if name not in direct_matching_dict.values()
     }
 
-    print("\n\t[2/3] Matching of GC-MS names to VMH identifiers via PubChemPy.")
+    print("\n\t[2/3] Matching of MBX names to VMH identifiers via PubChemPy")
     # Match by pubchempy and vmh database
     # NOTE {vmh_id, matched_identifier}
-    vmh_cid_dict = dict(zip(vmh_db["pubChemId"].index, vmh_db["pubChemId"]))
-    vmh_inchikey_dict = dict(zip(vmh_db["inchiKey"].index, vmh_db["inchiKey"]))
-    vmh_inchistring_dict = dict(zip(vmh_db["inchiString"].index, vmh_db["inchiString"]))
-    vmh_smiles_dict = dict(zip(vmh_db["smile"].index, vmh_db["smile"]))
+    vmh_cid_dict = dict(zip(vmh_db_df["pubChemId"].index, vmh_db_df["pubChemId"]))
+    vmh_inchikey_dict = dict(zip(vmh_db_df["inchiKey"].index, vmh_db_df["inchiKey"]))
+    vmh_inchistring_dict = dict(
+        zip(vmh_db_df["inchiString"].index, vmh_db_df["inchiString"])
+    )
+    vmh_smiles_dict = dict(zip(vmh_db_df["smile"].index, vmh_db_df["smile"]))
 
     # Empty dictionary to store standardized names
-    # NOTE {GC-MS name, matched_identifier}
-    iupac_names = {}
-    cid_names = {}
-    inchi_names = {}
-    inchikey_names = {}
-    smiles_names = {}
+    # NOTE {MBX name, matched_identifier}
+    iupac_names_dict = dict()
+    cid_names_dict = dict()
+    inchi_names_dict = dict()
+    inchikey_names_dict = dict()
+    smiles_names_dict = dict()
 
     # Iterate over each item in the compounds dictionary
-    for gcms_name, compound in unmatched_dict.items():
+    for mbx_name, compound in unmatched_dict.items():
         try:
             # Get the compound information from PubChem
             c = pcp.get_compounds(compound, "name")
             # If the compound was found, store its properties
             if c:
                 if c[0].iupac_name in vmh_names_dict.values():
-                    iupac_names[gcms_name] = c[0].iupac_name
+                    iupac_names_dict[mbx_name] = c[0].iupac_name
                 if c[0].cid in vmh_cid_dict.values():
-                    cid_names[gcms_name] = int(c[0].cid)
+                    cid_names_dict[mbx_name] = int(c[0].cid)
                 if c[0].inchi in vmh_inchistring_dict.values():
-                    inchi_names[gcms_name] = c[0].inchi
+                    inchi_names_dict[mbx_name] = c[0].inchi
                 if c[0].inchikey in vmh_inchikey_dict.values():
-                    inchikey_names[gcms_name] = c[0].inchikey
+                    inchikey_names_dict[mbx_name] = c[0].inchikey
                 if c[0].isomeric_smiles in vmh_smiles_dict.values():
-                    smiles_names[gcms_name] = c[0].isomeric_smiles
+                    smiles_names_dict[mbx_name] = c[0].isomeric_smiles
         except Exception as e:
-            print(f"\nError getting info for {compound}: {e}")
+            print(f"\t\tError getting info for '{compound}': {e}")
 
-    pubchempy_matched_dict = {}
+    pubchempy_matched_dict = dict()
 
     for vmh_id, vmh_inchikey in vmh_inchikey_dict.items():
-        for gcms_name, pubchempy_inchikey in inchikey_names.items():
+        for mbx_name, pubchempy_inchikey in inchikey_names_dict.items():
             if vmh_inchikey != "nan" and vmh_inchikey == pubchempy_inchikey:
-                print(f"\tMatched {gcms_name} to {vmh_id} using InChIKey")
-                pubchempy_matched_dict[gcms_name] = vmh_id
+                print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using InChIKey")
+                pubchempy_matched_dict[mbx_name] = vmh_id
     for vmh_id, vmh_cid in vmh_cid_dict.items():
-        for gcms_name, pubchempy_cid in cid_names.items():
+        for mbx_name, pubchempy_cid in cid_names_dict.items():
             if vmh_cid != "nan" and vmh_cid == pubchempy_cid:
-                print(f"\tMatched {gcms_name} to {vmh_id} using CID")
-                pubchempy_matched_dict[gcms_name] = vmh_id
+                print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using CID")
+                pubchempy_matched_dict[mbx_name] = vmh_id
     for vmh_id, vmh_inchi in vmh_inchistring_dict.items():
-        for gcms_name, pubchempy_inchi in inchi_names.items():
+        for mbx_name, pubchempy_inchi in inchi_names_dict.items():
             if vmh_inchi != "nan" and vmh_inchi == pubchempy_inchi:
-                print(f"\tMatched {gcms_name} to {vmh_id} using InChI")
-                pubchempy_matched_dict[gcms_name] = vmh_id
+                print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using InChI")
+                pubchempy_matched_dict[mbx_name] = vmh_id
 
     # Combine the direct matching dictionary with the pubchempy matched dictionary
     pubchempy_matched_dict.update(
         {value: key for key, value in direct_matching_dict.items()}
     )
 
-    if len(pubchempy_matched_dict) != len(gcms_data.index):
+    if len(pubchempy_matched_dict) != len(mbx_data_df.index):
         for vmh_id, vmh_smiles in vmh_smiles_dict.items():
-            for gcms_name, pubchempy_smiles in smiles_names.items():
+            for mbx_name, pubchempy_smiles in smiles_names_dict.items():
                 if vmh_smiles != "nan" and vmh_smiles == pubchempy_smiles:
-                    print(f"\nMatched {gcms_name} to {vmh_id} using SMILES")
-                    pubchempy_matched_dict[gcms_name] = vmh_id
+                    print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using SMILES")
+                    pubchempy_matched_dict[mbx_name] = vmh_id
 
     print(
-        "\n\t[3/3] Matching of GC-MS names to VMH identifiers via manual matching database."
+        "\n\t[3/3] Matching of MBX names to VMH identifiers via manual matching database"
     )
-    manual_matching = {}
+    manual_matching = dict()
     with open(manual_matching_filepath, "r") as f:
         for line in f:
             name, vmh = line.split("\t")
@@ -408,52 +432,12 @@ def match_names_to_vmh(
                 vmh = vmh[:-1]
             manual_matching[name] = vmh
 
-    max_matched_dict = {}
+    max_matched_dict = dict()
     for name, id in manual_matching.items():
         if id not in pubchempy_matched_dict.values():
             max_matched_dict[name] = id
 
     max_matched_dict.update(pubchempy_matched_dict)
-
-    # # FIXME Check if it is worth fixing this
-    # if type(model_input) == str:
-    #     model = load_model(model_input)
-    # else:
-    #     model = model_input
-    # print(
-    #     "\n\t[4/4] Matching of GC-MS names to VMH identifiers via model metabolite names."
-    # )
-    # # Get a list of unmatched GC-MS names
-    # unmatched_names = [
-    #     name for name in gcms_data.columns if name not in max_matched_dict.keys()
-    # ]
-    # for metab in model.metabolites:
-    #     for name in unmatched_names:
-    #         model_metab_lower = metab.name.lower()
-    #         unmatched_metab_lower = name.lower()
-    #         # If the metab.id ends with a square bracket, remove it and its contents
-    #         if metab.id.endswith("]"):
-    #             model_metab_id = metab.id.split("[")[0]
-    #             print(f"model_metab_id: {model_metab_id}\nOG metabolite ID: {metab.id}")
-    #         # If metab.id.split("_")[-2] is a single character string, keep the last two elements after splitting by "_"
-    #         # If there are more than two elements after splitting by "_", keep the last element
-    #         if (
-    #             len(model_metab_id.split("_")) > 1
-    #             and len(model_metab_id.split("_")[-2]) == 1
-    #             and len(model_metab_id.split("_")[-1]) > 1
-    #         ):
-    #             model_metab_id = "_".join(model_metab_id.split("_")[-2:])
-    #         else:
-    #             model_metab_id = model_metab_id.split("_")[-1]
-    #         if unmatched_metab_lower in model_metab_lower:
-    #             print(
-    #                 f"\tMatched the GC-MS name {name} to {model_metab_id} using metabolite name {metab.name}"
-    #             )
-    #             max_matched_dict[name] = model_metab_id
-
-    print(
-        f"\n{len(max_matched_dict)} of {len(gcms_data.columns)-2} VMH identifiers matched."
-    )
 
     # If the output filepath does not exist, create it
     if not os.path.exists(output_filepath):
@@ -462,26 +446,30 @@ def match_names_to_vmh(
     if output_filepath[-1] != "/":
         output_filepath += "/"
 
-    key_output_filepath = f"{output_filepath}{gcms_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt"
+    key_output_filepath = (
+        f"{output_filepath}{mbx_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt"
+    )
 
     # Write out the matched identifiers to a .txt file
     with open(key_output_filepath, "w") as f:
         for key, value in max_matched_dict.items():
             f.write(f"{key}\t{value}\n")
+    print(
+        f"\t\t{len(max_matched_dict)} of {len(mbx_data_df.columns)-2} VMH identifiers matched to the MBX metabolite names"
+    )
 
     print(
-        f"\n[DONE] Matched GC-MS names to VMH identifiers and written to {key_output_filepath}"
+        f"\n\t[Matched MBX names to VMH identifiers and written to '{key_output_filepath}']"
     )
 
 
-def fetch_norm_sample_metabolomics_data(
+def fetch_norm_sample_mbx_data(
     model_input: cobra.Model or str,
-    gcms_filepath: str,
+    mbx_filepath: str,
     match_key_output_filepath: str,
     use_existing_matched_keys: bool = False,
     existing_keys_path: str = None,
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
-    show_logo: bool = False,
 ) -> dict:
     """
     Generate a dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
@@ -490,17 +478,14 @@ def fetch_norm_sample_metabolomics_data(
     ----------
     model_input : cobra.Model or str
         The COBRApy model loaded into memory or a file path to the model
-    gcms_filepath : str
-        Filepath to the GC-MS data.
+    mbx_filepath : str
+        Filepath to the MBX data.
     match_key_output_filepath : str
-        Filepath to the directory where the matched key file will be saved. If
-        the path is not supplied, the output will be saved in the working
-        directory by default.
+        Filepath to the directory where the matched key file will be saved. If the path is not supplied, the output will be saved in the working directory by default.
     use_existing_matched_keys : bool
         Whether to use existing matched keys from match_names_to_vmh().
     existing_keys_path : str (optional)
-        If use_existing_matched_keys is true, load the keys.
-        Defaults to None.
+        If use_existing_matched_keys is true, load the keys; defaults to None.
     manual_matching_filepath : str (optional)
         Filepath to the manually matched key file; defaults to the work directory if a path is not supplied by the user.
     show_logo : bool (optional)
@@ -518,105 +503,280 @@ def fetch_norm_sample_metabolomics_data(
     ValueError
         If the model does not have a metabolomics data attribute.
     """
-    tool = "fetch-norm-sample-metabomics"
-    tool_description = "Gets the normalized metabolomics data for a sample"
-
-    if show_logo:
-        print_logo(tool, tool_description, version)
-
-    if type(model_input) == str:
+    if isinstance(model_input, str):
         model = load_model(model_input)
-    elif type(model_input) == cobra.Model:
+    elif isinstance(model_input, cobra.Model):
         model = model_input
     else:
         raise TypeError(
             "model_input must be a cobra.Model or a filepath to a COBRApy model"
         )
 
-    print(f"\n[START] Fetching metabolomics data for {model.name}...")
+    print(f"\n[Fetching MBX data for {model.name}]")
 
     # Read metabolomics data
-    metabolomics_data = pd.read_csv(gcms_filepath, sep=",", index_col=0)
+    mbx_data = pd.read_csv(mbx_filepath, sep=",", index_col=0)
 
     if use_existing_matched_keys:
-        match_key_output_filepath = existing_keys_path
+        if match_key_output_filepath == None:
+            match_key_output_filepath = os.getcwd()
+            print(
+                f"\tWarning: output path is not supplied; matched key file will be stored under the work directory: {match_key_output_filepath}"
+            )
+        else:
+            match_key_output_filepath = existing_keys_path
     else:
         if match_key_output_filepath == None:
             match_key_output_filepath = os.getcwd()
             print(
-                f"\nNot using existing keys and path is not suppliedl; matched key file is stored under the work directory: {match_key_output_filepath}"
+                f"\tWarning: output path is not supplied; matched key file will be stored under the work directory: {match_key_output_filepath}"
             )
 
         if match_key_output_filepath[-1] != "/":
             match_key_output_filepath += "/"
 
         match_names_to_vmh(
-            # model_input=model,
-            gcms_filepath=gcms_filepath,
+            mbx_filepath=mbx_filepath,
             output_filepath=match_key_output_filepath,
             manual_matching_filepath=manual_matching_filepath,
         )
 
-    matched_metabolite_names = {}
+    matched_mbx_names = dict()
     with open(
-        f"{match_key_output_filepath}{gcms_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt",
+        f"{match_key_output_filepath}{mbx_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt",
         "r",
     ) as f:
         matches = f.readlines()
         if matches != "":
             matches = [match.strip().split("\t") for match in matches]
             for match in matches:
-                matched_metabolite_names[match[0]] = match[1]
+                matched_mbx_names[match[0]] = match[1]
 
     idx_list = []
-    # Given the matched metabolite names, find the index where the metabolite is found in the metabolomics data
-    for col_name in metabolomics_data.columns:
-        if col_name in matched_metabolite_names.keys():
-            idx_list.append(metabolomics_data.columns.get_loc(col_name))
+    # Given the matched metabolite names, find the index where the metabolite is found in the MBX data
+    for col_name in mbx_data.columns:
+        if col_name in matched_mbx_names.keys():
+            idx_list.append(mbx_data.columns.get_loc(col_name))
 
     sample_id = []
     # Given the model name, find which row the sample ID is in
-    for index in metabolomics_data.index:
+    for index in mbx_data.index:
         if index in model.name:
             sample_id.append(index)
         elif index in model.name:
             sample_id.append(index)
 
     if len(sample_id) > 1:
-        print("Multiple sample IDs found in metabolomics data. Please check the data.")
-        sys.exit(1)
+        ValueError("Multiple sample IDs found in MBX data. Please check the data.")
     elif len(sample_id) == 0:
-        print("No sample ID found in metabolomics data. Please check the data.")
-        sys.exit(1)
+        ValueError("No sample ID found in MBX data. Please check the data.")
     else:
         sample_id = sample_id[0]
 
-    # Given a sample ID, get the metabolomics data for that sample
-    sample_metabolomic_data = metabolomics_data.loc[sample_id][min(idx_list) :]
+    # Given a sample ID, get the MBX data for that sample
+    sample_mbx_data = mbx_data.loc[sample_id][min(idx_list) :]
 
     # Create a dictionary of metabolite names and their concentrations
-    metabolite_raw_vals_dict = {
-        name: float(conc) for name, conc in sample_metabolomic_data.items()
-    }
+    metab_raw_vals_dict = {name: float(conc) for name, conc in sample_mbx_data.items()}
 
-    vmh_id_values = {}
-    for vmh_name, vmh_id in matched_metabolite_names.items():
-        for gcms_name, value in metabolite_raw_vals_dict.items():
-            if vmh_name == gcms_name:
+    # Create a dictionary of VMH IDs and their corresponding metabolite values if the metabolite is in the model
+    vmh_id_values = dict()
+    for vmh_name, vmh_id in matched_mbx_names.items():
+        for mbx_name, value in metab_raw_vals_dict.items():
+            if vmh_name == mbx_name and f"EX_{vmh_id}[fe]" in [
+                rxn.id for rxn in model.reactions
+            ]:
                 vmh_id_values[vmh_id] = value
 
     # Normalize the values
-    total = sum(vmh_id_values.values())
-    normalized_vmh_id_values = {k: v / total for k, v in vmh_id_values.items()}
-
-    assert sum(normalized_vmh_id_values.values()) == 1.0
+    total_val = sum(vmh_id_values.values())
+    norm_vmh_id_vals = {k: v / total_val for k, v in vmh_id_values.items()}
 
     print(
-        f"\nNumber of VMH ID-matched metabolites: {len(normalized_vmh_id_values)} of {len(metabolite_raw_vals_dict)}"
+        f"\n\tNumber of name-matched and normalized metabolites in the model: {len(norm_vmh_id_vals)}/{len(metab_raw_vals_dict)} ({round(len(norm_vmh_id_vals)/len(metab_raw_vals_dict)*100, 2)}%)"
     )
+    print(f"\n[Returning normalized sample-specific MBX values for {sample_id}]")
+
+    return norm_vmh_id_vals
+
+
+def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list:
+    """
+    Compute the MBX associated FEX reaction constraints for a sample and tests
+    if the addition of the constraints gives a feasible solution.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        The model to be constrained.
+    mbx_metab_norm_dict : dict
+        A dictionary of metabolite names and their normalized values.
+
+    Returns
+    -------
+    list
+        A list of the constraints added to the model.
+    """
+    print(f"\n[Fetching MBX constraints for {model.name}]")
+    # Calculate the constraint for each metabolite's fecal exchange reactions
+    metab_constrained_flux_expr = dict()
+    for vmh_id, mbx_value in mbx_metab_norm_dict.items():
+        if mbx_value != 0.0 and f"EX_{vmh_id}[fe]" in model.reactions:
+            flux_expr = model.reactions.get_by_id(f"EX_{vmh_id}[fe]").flux_expression
+            metab_constrained_flux_expr[
+                f"EX_{vmh_id}[fe]"
+            ] = flux_expr - mbx_value * sum(
+                model.reactions.get_by_id(f"EX_{metab}[fe]").flux_expression
+                for metab in mbx_metab_norm_dict.keys()
+                if f"EX_{metab}[fe]" in model.reactions
+            )
+
+    # Add the constraints to a list for each metabolite with MBX data
+    constraint_list = []
+    for ex_rxn_id, constr_expr in metab_constrained_flux_expr.items():
+        constraint = model.problem.Constraint(
+            constr_expr, lb=0, ub=0, name=ex_rxn_id + "_constraint"
+        )
+        constraint_list.append(constraint)
 
     print(
-        f"\n[DONE] Returning normalized sample-specific metabolomics values for {sample_id}."
+        f"\n\tAdding {len(constraint_list)} computed MBX constraints to {model.name} and testing if the solution is feasible"
+    )
+    # Add the constraints to the model
+    model.add_cons_vars(constraint_list)
+    model.solver.update()
+
+    # Test if the solution is feasible
+    model.objective = 0
+    solution = model.optimize()
+
+    if solution.status == "infeasible":
+        model.remove_cons_vars(constraint_list)
+        model.solver.update()
+        print(
+            "\n[Warning: the solution is infeasible by introducing the constraints without slack variables]"
+        )
+    else:
+        print("\n[The solution is feasible without adding slack variables]")
+        model.remove_cons_vars(constraint_list)
+        model.solver.update()
+
+    return constraint_list
+
+
+def slack_constraints(model: cobra.Model, constraints: list) -> list:
+    feasible_constraints = []
+    infeasible_constraints = []
+
+    print(f"\n[Testing if the constraints are feasible with slack variables]")
+    for constraint in constraints:
+        model.add_cons_vars(constraint)
+        model.solver.update()
+        model.objective = 0
+        solution = model.optimize()
+
+        if solution.status == "optimal":
+            print(f"\tConstraint {constraint.name} is feasible.")
+            feasible_constraints.append(constraint)
+        else:
+            print(f"\tConstraint {constraint.name} is infeasible.")
+            infeasible_constraints.append(constraint)
+            model.remove_cons_vars(constraint)
+            model.solver.update()
+
+    new_constraints = []
+    slack_variables = []
+    print(f"\n[Adding slack variables to infeasible constraints]")
+    for constraint in infeasible_constraints:
+        # Introduce a slack variable to the constraint
+        slack_variable_pos = model.problem.Variable(
+            constraint.name + "_slack_pos", lb=0
+        )
+        slack_variable_neg = model.problem.Variable(
+            constraint.name + "_slack_neg", lb=0
+        )
+
+        slack_variables.extend([slack_variable_pos, slack_variable_neg])
+
+        # Create a new constraint that includes the slack variable
+        new_constraint = model.problem.Constraint(
+            constraint.expression + slack_variable_pos - slack_variable_neg,
+            lb=constraint.lb,
+            ub=constraint.ub,
+            name=constraint.name + "_slack",
+        )
+
+        new_constraints.append(new_constraint)
+
+    # Add the new constraints to the model
+    model.add_cons_vars(new_constraints)
+    model.solver.update()
+
+    # Set the objective to be the sum of the absolute values of the slack variables
+    model.objective = model.problem.Objective(
+        sum(slack_variables),
+        direction="min",
     )
 
-    return normalized_vmh_id_values
+    # Run optimization
+    solution = model.optimize()
+
+    # After optimizing the model, check the optimal values of the slack variables and set the constraints accordingly
+    slack_pos_pos_val_names = []
+    slack_pos_zero_val_names = []
+    slack_neg_pos_val_names = []
+    slack_neg_zero_val_names = []
+    print("\tSlack variables and primals:")
+    for var in slack_variables:
+        print(f"\t\t{var.name}:\t{var.primal}")
+        if var.primal > 0 and var.name.endswith("_slack_pos"):
+            slack_pos_pos_val_names.append(var.name.replace("_pos", ""))
+        elif var.primal > 0 and var.name.endswith("_slack_neg"):
+            slack_neg_pos_val_names.append(var.name.replace("_neg", ""))
+        elif var.primal == 0 and var.name.endswith("_slack_pos"):
+            slack_pos_zero_val_names.append(var.name.replace("_pos", ""))
+        elif var.primal == 0 and var.name.endswith("_slack_neg"):
+            slack_neg_zero_val_names.append(var.name.replace("_neg", ""))
+
+    # Find the intersection of the slack variable names
+    intersection_gt = list(
+        set(slack_pos_zero_val_names).intersection(slack_neg_pos_val_names)
+    )
+    intersection_lt = list(
+        set(slack_pos_pos_val_names).intersection(slack_neg_zero_val_names)
+    )
+    intersection_eq = list(
+        set(slack_pos_zero_val_names).intersection(slack_neg_zero_val_names)
+    )
+
+    # Adjust constraints based on slack variable values
+    slacked_constraints = []
+    print("\n\tSlack constraints and bounds:")
+    for constraint in new_constraints:
+        if constraint.name in intersection_gt:
+            # Adjust constraint to v_EX_fecal_metab_i > x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
+            constraint.lb = 0
+            constraint.ub = None
+            slacked_constraints.append(constraint)
+            print(f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub})")
+        elif constraint.name in intersection_lt:
+            # Adjust constraint to v_EX_fecal_metab_i < x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
+            constraint.lb = None
+            constraint.ub = 0
+            slacked_constraints.append(constraint)
+            print(f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub})")
+        elif constraint.name in intersection_eq:
+            # Adjust constraint to v_EX_fecal_metab_i = x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
+            constraint.lb = 0
+            constraint.ub = 0
+            print(f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub})")
+
+    # Remove the slack variables and constraints from the model
+    model.remove_cons_vars(slack_variables)
+    model.remove_cons_vars(new_constraints)
+    model.remove_cons_vars(feasible_constraints)
+    model.solver.update()
+
+    print(f"\n[Returning feasible and slacked constraints]")
+
+    return feasible_constraints, slacked_constraints
