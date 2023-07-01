@@ -1,12 +1,10 @@
 import os
 import re
-import sys
 from math import isnan
 
 import cobra
 import pandas as pd
 import pubchempy as pcp
-
 
 version = "0.1.0"
 
@@ -70,7 +68,7 @@ def load_model(model_path: str) -> cobra.Model:
     if not os.path.exists(model_path):
         raise ValueError(f"Model path does not exist: {model_path}")
 
-    print(f"\n[START] Loading model from {model_path}...")
+    print(f"\n[Loading model from {model_path}]")
 
     if model_path.endswith(".xml"):
         model = cobra.io.read_sbml_model(model_path)
@@ -87,12 +85,14 @@ def load_model(model_path: str) -> cobra.Model:
 
     model.name = os.path.basename(model_path).split(".")[0]
 
-    print(f"\n[DONE] {model.name} loaded.")
+    print(f"\n[{model.name} loaded]")
 
     return model
 
 
-def set_default_bounds(model: cobra.Model, source: str = "MMTpy") -> bool:
+def set_default_bounds(
+    model: cobra.Model, source: str = "MMTpy", rxn_type: str = "all"
+) -> bool:
     """
     Set the bounds of the model's reactions according to conventions;
     prints the changes and returns True if the bounds were different from the
@@ -107,6 +107,9 @@ def set_default_bounds(model: cobra.Model, source: str = "MMTpy") -> bool:
     source : str, optional
         The definition of conventional bounds, by default "MMTpy"; options are of
         either "MMTpy" or "MATLAB".
+    rxn_type : str, optional
+        The type of reactions whose bounds are to be set, by default "all";
+        options are of either "all", "FEX", "UFEt", "IEX", "DUt", or "commBiomass".
 
     Returns
     -------
@@ -130,7 +133,7 @@ def set_default_bounds(model: cobra.Model, source: str = "MMTpy") -> bool:
     5. Set the bounds of the community biomass reaction to be (0.4, 1.)
     """
 
-    print(f"\n[START] Setting default bounds using definitions based on {source}...")
+    print(f"\n[Setting bounds for {rxn_type} reactions using {source} defaults]")
 
     saved_bounds = dict()
     new_bounds = dict()
@@ -140,6 +143,7 @@ def set_default_bounds(model: cobra.Model, source: str = "MMTpy") -> bool:
             rxn.id.startswith("EX_")
             and rxn.id.endswith("[fe]")
             and "microbeBiomass" not in rxn.id
+            and rxn_type in ["all", "FEX"]
         ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             if source == "MMTpy":
@@ -154,6 +158,7 @@ def set_default_bounds(model: cobra.Model, source: str = "MMTpy") -> bool:
             rxn.id.startswith("EX_")
             and rxn.id.endswith("[fe]")
             and "microbeBiomass" in rxn.id
+            and rxn_type in ["all", "FEX"]
         ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             if source == "MMTpy":
@@ -164,22 +169,24 @@ def set_default_bounds(model: cobra.Model, source: str = "MMTpy") -> bool:
                 raise ValueError(f"Source {source} not supported")
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the fecal transport (UFEt_met) reactions to be (0., 1000000.)
-        elif rxn.id.startswith("UFEt_"):
+        elif rxn.id.startswith("UFEt_") and rxn_type in ["all", "UFEt"]:
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the microbe secretion/uptake (microbe_IEX_met[u]tr) reactions to be (-1000., 1000.)
-        elif "IEX" in rxn.id and rxn.id.endswith("[u]tr"):
+        elif (
+            "IEX" in rxn.id and rxn.id.endswith("[u]tr") and rxn_type in ["all", "IEX"]
+        ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 1000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the diet transport (DUt_met) reactions to be (0., 1000000.)
-        elif rxn.id.startswith("DUt_"):
+        elif rxn.id.startswith("DUt_") and rxn_type in ["all", "DUt"]:
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
         # Set the bounds of the community biomass reaction to be (0.4, 1.)
-        elif rxn.id == "communityBiomass":
+        elif rxn.id == "communityBiomass" and rxn_type in ["all", "commBiomass"]:
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
             model.reactions.get_by_id(rxn.id).bounds = (0.4, 1.0)
             new_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
@@ -193,15 +200,19 @@ def set_default_bounds(model: cobra.Model, source: str = "MMTpy") -> bool:
 
     if n_changed_bounds == 0:
         bounds_changed = False
-        print("\n[DONE] No bounds were changed.")
+        print("\n\tNo bounds were changed")
     else:
         bounds_changed = True
-        print(f"\n[DONE] Changed bounds for {n_changed_bounds} reactions.")
+        print(
+            f"\n\tChanged {n_changed_bounds}/{len(saved_bounds)} {rxn_type} reaction bounds for {model.name}"
+        )
 
-        return bounds_changed
+    return bounds_changed
 
 
-def convert_model_format(model_path: str or cobra.Model, output_path: str = None):
+def convert_model_format(
+    model_path: str or cobra.Model, output_path: str = None
+) -> None:
     """
     Convert a mgPipe.m (Heinken et al., 2022) MATLAB model to a json model.
 
@@ -225,7 +236,7 @@ def convert_model_format(model_path: str or cobra.Model, output_path: str = None
     else:
         model = model_path
 
-    print(f"\n[START] Converting model {model.name} to json format...")
+    print(f"\n[Converting model {model.name} to json format]")
 
     # Convert the metabolite charge to a string if it is NaN
     for metab in model.metabolites:
@@ -242,10 +253,10 @@ def convert_model_format(model_path: str or cobra.Model, output_path: str = None
 
     cobra.io.save_json_model(model, converted_output_filepath)
 
-    print(f"\n[DONE] {model.name} converted to json format.")
+    print(f"\n[{model.name} converted to json format]")
 
 
-def convert_string(s):
+def convert_string(s) -> str:
     """
     Convert a string to a standard format for matching.
 
@@ -256,7 +267,7 @@ def convert_string(s):
 
     Returns
     -------
-    s : str
+    str
         Converted string.
 
     Notes
@@ -283,7 +294,6 @@ def match_names_to_vmh(
     output_filepath: str,
     vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
-    show_logo: bool = False,
 ) -> None:
     """
     Map the metabolite names detected by MBX to VMH identifiers for a given
@@ -300,8 +310,6 @@ def match_names_to_vmh(
         Filepath (including .txt file name) for saving the matching keys.
     vmh_db_filepath : str
         Filepath to the VMH database of metabolites and their identifiers.
-    show_logo : bool
-        Specification for printing the logo and function details.
 
     Returns
     -------
@@ -315,21 +323,15 @@ def match_names_to_vmh(
     pubchempy, internet access is required; otherwise, the matching will fallback
     on direct and manual matching.
     """
-    # Define tool metadata
-    tool = "match-names-to-vmh"
-    tool_description = "Matching of MBX metabolite names to VMH identifiers."
-
-    if show_logo:
-        print_logo(tool, tool_description, version)
 
     # Load the data
     vmh_db_df = pd.read_csv(vmh_db_filepath, index_col=0, header=0, delimiter="\t")
     mbx_data_df = pd.read_csv(mbx_filepath, index_col=0, header=0)
 
-    print("\n[START] Matching MBX names to VMH identifiers...")
+    print("\n[Matching MBX names to VMH identifiers]")
 
     print(
-        "\n\t[1/3] Direct matching of MBX names to VMH identifiers using the VMH database."
+        "\n\t[1/3] Direct matching of MBX names to VMH identifiers using the VMH database"
     )
     # Create dictionaries for direct matching
     mbx_names_dict = {
@@ -351,7 +353,7 @@ def match_names_to_vmh(
         if name not in direct_matching_dict.values()
     }
 
-    print("\n\t[2/3] Matching of MBX names to VMH identifiers via PubChemPy.")
+    print("\n\t[2/3] Matching of MBX names to VMH identifiers via PubChemPy")
     # Match by pubchempy and vmh database
     # NOTE {vmh_id, matched_identifier}
     vmh_cid_dict = dict(zip(vmh_db_df["pubChemId"].index, vmh_db_df["pubChemId"]))
@@ -420,7 +422,7 @@ def match_names_to_vmh(
                     pubchempy_matched_dict[mbx_name] = vmh_id
 
     print(
-        "\n\t[3/3] Matching of MBX names to VMH identifiers via manual matching database."
+        "\n\t[3/3] Matching of MBX names to VMH identifiers via manual matching database"
     )
     manual_matching = dict()
     with open(manual_matching_filepath, "r") as f:
@@ -452,12 +454,12 @@ def match_names_to_vmh(
     with open(key_output_filepath, "w") as f:
         for key, value in max_matched_dict.items():
             f.write(f"{key}\t{value}\n")
+    print(
+        f"\t\t{len(max_matched_dict)} of {len(mbx_data_df.columns)-2} VMH identifiers matched to the MBX metabolite names"
+    )
 
     print(
-        f"\n\t[DONE] Matched MBX names to VMH identifiers and written to '{key_output_filepath}'"
-    )
-    print(
-        f"\t\t{len(max_matched_dict)} of {len(mbx_data_df.columns)-2} VMH identifiers matched to the MBX metabolite names."
+        f"\n\t[Matched MBX names to VMH identifiers and written to '{key_output_filepath}']"
     )
 
 
@@ -468,7 +470,6 @@ def fetch_norm_sample_mbx_data(
     use_existing_matched_keys: bool = False,
     existing_keys_path: str = None,
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
-    show_logo: bool = False,
 ) -> dict:
     """
     Generate a dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
@@ -502,22 +503,16 @@ def fetch_norm_sample_mbx_data(
     ValueError
         If the model does not have a metabolomics data attribute.
     """
-    tool = "fetch-norm-sample-mbx"
-    tool_description = "Gets the normalized MBX data for a sample"
-
-    if show_logo:
-        print_logo(tool, tool_description, version)
-
-    if type(model_input) == str:
+    if isinstance(model_input, str):
         model = load_model(model_input)
-    elif type(model_input) == cobra.Model:
+    elif isinstance(model_input, cobra.Model):
         model = model_input
     else:
         raise TypeError(
             "model_input must be a cobra.Model or a filepath to a COBRApy model"
         )
 
-    print(f"\n[START] Fetching MBX data for {model.name}...")
+    print(f"\n[Fetching MBX data for {model.name}]")
 
     # Read metabolomics data
     mbx_data = pd.read_csv(mbx_filepath, sep=",", index_col=0)
@@ -526,7 +521,7 @@ def fetch_norm_sample_mbx_data(
         if match_key_output_filepath == None:
             match_key_output_filepath = os.getcwd()
             print(
-                f"\nNot using existing keys and path is not supplied; matched key file will be stored under the work directory: {match_key_output_filepath}"
+                f"\tWarning: output path is not supplied; matched key file will be stored under the work directory: {match_key_output_filepath}"
             )
         else:
             match_key_output_filepath = existing_keys_path
@@ -534,7 +529,7 @@ def fetch_norm_sample_mbx_data(
         if match_key_output_filepath == None:
             match_key_output_filepath = os.getcwd()
             print(
-                f"\nNot using existing keys and path is not supplied; matched key file will be stored under the work directory: {match_key_output_filepath}"
+                f"\tWarning: output path is not supplied; matched key file will be stored under the work directory: {match_key_output_filepath}"
             )
 
         if match_key_output_filepath[-1] != "/":
@@ -572,11 +567,9 @@ def fetch_norm_sample_mbx_data(
             sample_id.append(index)
 
     if len(sample_id) > 1:
-        print("Multiple sample IDs found in MBX data. Please check the data.")
-        sys.exit(1)
+        ValueError("Multiple sample IDs found in MBX data. Please check the data.")
     elif len(sample_id) == 0:
-        print("No sample ID found in MBX data. Please check the data.")
-        sys.exit(1)
+        ValueError("No sample ID found in MBX data. Please check the data.")
     else:
         sample_id = sample_id[0]
 
@@ -599,11 +592,10 @@ def fetch_norm_sample_mbx_data(
     total_val = sum(vmh_id_values.values())
     norm_vmh_id_vals = {k: v / total_val for k, v in vmh_id_values.items()}
 
-    print(f"\n[DONE] Returning normalized sample-specific MBX values for {sample_id}.")
-
     print(
-        f"\tNumber of name-matched and normalized metabolites in the model: {len(norm_vmh_id_vals)}/{len(metab_raw_vals_dict)} ({round(len(norm_vmh_id_vals)/len(metab_raw_vals_dict)*100, 2)}%)"
+        f"\n\tNumber of name-matched and normalized metabolites in the model: {len(norm_vmh_id_vals)}/{len(metab_raw_vals_dict)} ({round(len(norm_vmh_id_vals)/len(metab_raw_vals_dict)*100, 2)}%)"
     )
+    print(f"\n[Returning normalized sample-specific MBX values for {sample_id}]")
 
     return norm_vmh_id_vals
 
@@ -625,7 +617,7 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
     list
         A list of the constraints added to the model.
     """
-    print(f"\n[START] Fetching MBX constraints for {model.name}...")
+    print(f"\n[Fetching MBX constraints for {model.name}]")
     # Calculate the constraint for each metabolite's fecal exchange reactions
     metab_constrained_flux_expr = dict()
     for vmh_id, mbx_value in mbx_metab_norm_dict.items():
@@ -648,7 +640,7 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
         constraint_list.append(constraint)
 
     print(
-        f"\tTesting {len(constraint_list)} computed MBX constraints for {model.name}."
+        f"\n\tAdding {len(constraint_list)} computed MBX constraints to {model.name} and testing if the solution is feasible"
     )
     # Add the constraints to the model
     model.add_cons_vars(constraint_list)
@@ -662,10 +654,10 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
         model.remove_cons_vars(constraint_list)
         model.solver.update()
         print(
-            "\n[WARNING] The solution is infeasible by introducing the constraints without slack variables."
+            "\n[Warning: the solution is infeasible by introducing the constraints without slack variables]"
         )
     else:
-        print("\n[DONE] The solution is feasible without adding slack variables.")
+        print("\n[The solution is feasible without adding slack variables]")
         model.remove_cons_vars(constraint_list)
         model.solver.update()
 
@@ -673,94 +665,118 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
 
 
 def slack_constraints(model: cobra.Model, constraints: list) -> list:
-    """
-    Given a list of constraints, add slack variables to the constraints and test
-    if the solution is feasible.
-
-    Parameters
-    ----------
-    model : cobra.Model
-        The model to be constrained.
-    constraints : list
-        A list of constraints to be added to the model.
-
-    Returns
-    -------
-    list
-        A list of the constraints added to the model.
-    """
-    # Add the constraints to the model and test for feasibility
-    print("\n[START] Testing the feasibility of the model without slack variables...")
-    model.add_cons_vars(constraints)
-    model.solver.update()
-    model.objective = 0
-    solution = model.optimize()
-
     feasible_constraints = []
+    infeasible_constraints = []
 
-    if solution.status == "optimal":
-        for constraint in constraints:
-            print("\nFeasible model with constraints:")
-            print(f"\t{constraint.name}:\t{constraint.primal}")
-            feasible_constraints.append(constraint)
-            print("\n[DONE] Returning feasible constraints.")
-    else:
-        # If the model is infeasible, loop through the constraints, remove them
-        # from the model, and add a slack variable to a list.
-        print("\n\tInfeasible model with constraints:")
-        for constraint in constraints:
-            print(f"\t{constraint.name}:\t{constraint.primal}")
-        model.remove_cons_vars(constraints)
+    print(f"\n[Testing if the constraints are feasible with slack variables]")
+    for constraint in constraints:
+        model.add_cons_vars(constraint)
         model.solver.update()
-        new_constraints = []
-
-        print("\n\t[1/2] Adding slack variables to the constraints...")
-        for constraint in constraints:
-            # Introduce a slack variable to the constraint
-            slack_variable_pos = model.problem.Variable(
-                constraint.name + "_slack_pos", lb=0
-            )
-            slack_variable_neg = model.problem.Variable(
-                constraint.name + "_slack_neg", lb=0
-            )
-
-            # Create a new constraint that includes the slack variable
-            new_constraint = model.problem.Constraint(
-                constraint.expression + slack_variable_pos - slack_variable_neg,
-                lb=constraint.lb,
-                ub=constraint.ub,
-                name=constraint.name + "_slack",
-            )
-
-            # Add the new constraint to the list of new constraints
-            new_constraints.append(new_constraint)
-
-        # Add the new constraints to the model
-        model.add_cons_vars(new_constraints)
-        model.solver.update()
-
-        print("\n\t[2/2] Testing the feasibility of the model with slack variables...")
-        # Test for feasibility again
         model.objective = 0
         solution = model.optimize()
-        if solution.status == "optimal":
-            # If the solution is now feasible, add the new constraint to the list of feasible constraints
-            print("\n\tFeasible model with slack variables:")
-            for constraint in new_constraints:
-                print(f"\t{constraint.name}:\t{constraint.primal}")
-                feasible_constraints.append(constraint)
-            # Remove the slack variables from the model
-            model.remove_cons_vars(new_constraints)
-            model.solver.update()
-            print("\n[DONE] Returning feasible constraints.")
-        else:
-            # If the solution is still infeasible, print the values of the slack variables
-            print("\n\tInfeasible model with slack variables:")
-            for constraint in new_constraints:
-                print(f"\t{constraint.name}:\t{constraint.primal}")
-            # Remove the slack variables from the model
-            model.remove_cons_vars(new_constraints)
-            model.solver.update()
-            print("\n[WARNING] Returning infeasible constraints.")
 
-    return feasible_constraints
+        if solution.status == "optimal":
+            print(f"\tConstraint {constraint.name} is feasible.")
+            feasible_constraints.append(constraint)
+        else:
+            print(f"\tConstraint {constraint.name} is infeasible.")
+            infeasible_constraints.append(constraint)
+            model.remove_cons_vars(constraint)
+            model.solver.update()
+
+    new_constraints = []
+    slack_variables = []
+    print(f"\n[Adding slack variables to infeasible constraints]")
+    for constraint in infeasible_constraints:
+        # Introduce a slack variable to the constraint
+        slack_variable_pos = model.problem.Variable(
+            constraint.name + "_slack_pos", lb=0
+        )
+        slack_variable_neg = model.problem.Variable(
+            constraint.name + "_slack_neg", lb=0
+        )
+
+        slack_variables.extend([slack_variable_pos, slack_variable_neg])
+
+        # Create a new constraint that includes the slack variable
+        new_constraint = model.problem.Constraint(
+            constraint.expression + slack_variable_pos - slack_variable_neg,
+            lb=constraint.lb,
+            ub=constraint.ub,
+            name=constraint.name + "_slack",
+        )
+
+        new_constraints.append(new_constraint)
+
+    # Add the new constraints to the model
+    model.add_cons_vars(new_constraints)
+    model.solver.update()
+
+    # Set the objective to be the sum of the absolute values of the slack variables
+    model.objective = model.problem.Objective(
+        sum(slack_variables),
+        direction="min",
+    )
+
+    # Run optimization
+    solution = model.optimize()
+
+    # After optimizing the model, check the optimal values of the slack variables and set the constraints accordingly
+    slack_pos_pos_val_names = []
+    slack_pos_zero_val_names = []
+    slack_neg_pos_val_names = []
+    slack_neg_zero_val_names = []
+    print("\tSlack variables and primals:")
+    for var in slack_variables:
+        print(f"\t\t{var.name}:\t{var.primal}")
+        if var.primal > 0 and var.name.endswith("_slack_pos"):
+            slack_pos_pos_val_names.append(var.name.replace("_pos", ""))
+        elif var.primal > 0 and var.name.endswith("_slack_neg"):
+            slack_neg_pos_val_names.append(var.name.replace("_neg", ""))
+        elif var.primal == 0 and var.name.endswith("_slack_pos"):
+            slack_pos_zero_val_names.append(var.name.replace("_pos", ""))
+        elif var.primal == 0 and var.name.endswith("_slack_neg"):
+            slack_neg_zero_val_names.append(var.name.replace("_neg", ""))
+
+    # Find the intersection of the slack variable names
+    intersection_gt = list(
+        set(slack_pos_zero_val_names).intersection(slack_neg_pos_val_names)
+    )
+    intersection_lt = list(
+        set(slack_pos_pos_val_names).intersection(slack_neg_zero_val_names)
+    )
+    intersection_eq = list(
+        set(slack_pos_zero_val_names).intersection(slack_neg_zero_val_names)
+    )
+
+    # Adjust constraints based on slack variable values
+    slacked_constraints = []
+    print("\n\tSlack constraints and bounds:")
+    for constraint in new_constraints:
+        if constraint.name in intersection_gt:
+            # Adjust constraint to v_EX_fecal_metab_i > x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
+            constraint.lb = 0
+            constraint.ub = None
+            slacked_constraints.append(constraint)
+            print(f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub})")
+        elif constraint.name in intersection_lt:
+            # Adjust constraint to v_EX_fecal_metab_i < x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
+            constraint.lb = None
+            constraint.ub = 0
+            slacked_constraints.append(constraint)
+            print(f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub})")
+        elif constraint.name in intersection_eq:
+            # Adjust constraint to v_EX_fecal_metab_i = x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
+            constraint.lb = 0
+            constraint.ub = 0
+            print(f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub})")
+
+    # Remove the slack variables and constraints from the model
+    model.remove_cons_vars(slack_variables)
+    model.remove_cons_vars(new_constraints)
+    model.remove_cons_vars(feasible_constraints)
+    model.solver.update()
+
+    print(f"\n[Returning feasible and slacked constraints]")
+
+    return feasible_constraints, slacked_constraints
