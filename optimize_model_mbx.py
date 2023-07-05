@@ -1,7 +1,10 @@
+import cobra
+
 from cobra_utils import (
     fetch_mbx_constr_list,
     fetch_norm_sample_mbx_data,
     load_model,
+    print_logo,
     set_default_bounds,
     slack_constraints,
 )
@@ -29,8 +32,23 @@ def optimize_model_mbx(
     dict
         Dictionary of the optimized solutions for each metabolite.
     """
+    # Print the logo
+    print_logo(
+        tool="optimize_model_mbx",
+        tool_description="Optimize a model for each metabolite given the MBX data.",
+        version="0.1.0-beta",
+    )
+
     # Load the model
-    model = load_model(model_input)
+    if isinstance(model_input, cobra.Model):
+        model = model_input
+    elif isinstance(model_input, str):
+        print("\nLoading the model...")
+        model = load_model(model_input)
+    else:
+        raise ValueError(
+            "The model_input must be a path to a model or a COBRApy model object."
+        )
 
     # Set the solver interface
     model.solver = "gurobi"

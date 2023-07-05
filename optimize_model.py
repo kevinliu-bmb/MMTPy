@@ -1,6 +1,6 @@
 import cobra
 
-from cobra_utils import load_model
+from cobra_utils import load_model, print_logo
 
 
 def optimize_model(model_input: cobra.Model or str, add_1ba: bool = False) -> dict:
@@ -37,6 +37,13 @@ def optimize_model(model_input: cobra.Model or str, add_1ba: bool = False) -> di
     ValueError
         If the model_input is not a path to a model or a COBRApy model object.
     """
+    # Print the logo
+    print_logo(
+        tool="optimize_model",
+        tool_description="Optimize a model by minimizing the flux through IEX reactions constrained by maximized UFEt fluxes.",
+        version="0.1.0-beta",
+    )
+
     # Load the model
     if isinstance(model_input, cobra.Model):
         model = model_input
