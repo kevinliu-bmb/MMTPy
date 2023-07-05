@@ -11,7 +11,12 @@ from mmtpy_utils import (
 
 
 def optimize_model(
-    model_input: cobra.Model or str, add_1ba: bool = False, silent: bool = False
+    model_input: cobra.Model or str,
+    output_path: str,
+    add_1ba: bool = False,
+    silent: bool = False,
+    return_outputs: bool = False,
+    parallel: bool = False,
 ) -> dict:
     """
     Optimizes a multi-species model of metabolism by maximizing the flux through
@@ -27,11 +32,19 @@ def optimize_model(
     model_input : str or cobra.Model
         Path to a multi-species model in any COBRApy supported format or a
         COBRApy model loaded into memory.
+    output_path : str
+        Path to the directory where the output files should be saved.
     add_1ba : bool, optional
         If True, will set diet 1ba bounds to the model before optimizing, by
         default False.
     silent : bool, optional
         If True, will suppress all set_default_bounds() output, by default False.
+    return_outputs : bool, optional
+        If True, will return the maximized UFEt fluxes, minimized IEX fluxes, and
+        the model reaction bounds after minimization of the IEX fluxes, by default
+        False.
+    parallel : bool, optional
+        If True, will only print start and end of workflow, by default False.
 
     Returns
     -------
@@ -49,18 +62,20 @@ def optimize_model(
         If the model_input is not a path to a model or a COBRApy model object.
     """
     # Print the logo
-    print_logo(
-        tool="optimize_model",
-        tool_description="Optimize a model by minimizing the flux through IEX reactions constrained by\nmaximized UFEt fluxes.",
-        version="0.1.0-beta",
-    )
+    if not parallel:
+        print_logo(
+            tool="optimize_model",
+            tool_description="Optimize a model by minimizing the flux through IEX reactions constrained by\nmaximized UFEt fluxes.",
+            version="0.1.0-beta",
+        )
+    else:
+        print(f"\n[STARTED] 'optimize_model' workflow for {model_input}")
 
     # Load the model
     if isinstance(model_input, cobra.Model):
         model = model_input
     elif isinstance(model_input, str):
-        print("\nLoading the model...")
-        model = load_model(model_input)
+        model = load_model(model_input, simple_model_name=True)
     else:
         raise ValueError(
             "The model_input must be a path to a model or a COBRApy model object."
@@ -85,8 +100,8 @@ def optimize_model(
     #########################################################
     # Part 1: maximize the flux through all UFEt reactions
     #########################################################
-
-    print(f"\n[STARTED] Part 1: maximizing UFEt fluxes for {model.name}")
+    if not parallel:
+        print(f"\n[STARTED] Part 1: maximizing UFEt fluxes for {model.name}")
 
     # Fetch all UFEt reactions and store them in a list
     UFEt_rxn_list = []
@@ -100,24 +115,27 @@ def optimize_model(
     maximized_UFEt_flux_list = []
     for rxn in UFEt_rxn_list:
         counter += 1
-        print(
-            f"\nMaximizing UFEt reaction {str(counter)} of {str(counter_max)} for {model.name}"
-        )
+        if not parallel:
+            print(
+                f"\n\tMaximizing UFEt reaction {str(counter)} of {str(counter_max)} for {model.name}"
+            )
         model.objective = rxn
         solution = model.optimize()
         maximized_UFEt_flux_list.append(solution.objective_value)
-        print(f"{rxn}:\t{solution.objective_value}")
+        if not parallel:
+            print(f"\t\t{rxn}:\t{solution.objective_value}")
 
     # Create a dictionary of the maximized UFEt fluxes
     maximized_UFEt_flux_dict = dict(zip(UFEt_rxn_list, maximized_UFEt_flux_list))
 
-    print(f"\n[DONE] Part 1: maximization complete for {model.name}")
+    if not parallel:
+        print(f"\n[DONE] Part 1: maximization complete for {model.name}")
 
     #########################################################
     # Part 2: minimize the flux through all IEX reactions
     #########################################################
 
-    print(f"\n[STARTED] Part 2: minimizing IEX fluxes for {model.name}")
+        print(f"\n[STARTED] Part 2: minimizing IEX fluxes for {model.name}")
 
     # Constrain the UFEt reactions by the maximized UFEt fluxes and minimize the
     # flux through all IEX reactions
@@ -126,9 +144,10 @@ def optimize_model(
     minimized_IEX_flux_dict = dict()
     for i in range(len(UFEt_rxn_list)):
         counter += 1
-        print(
-            f"\n\tMinimizing IEX reaction {str(counter)} of {str(counter_max)} for {model.name}"
-        )
+        if not parallel:
+            print(
+                f"\n\tMinimizing IEX reaction {str(counter)} of {str(counter_max)} for {model.name}"
+            )
         if maximized_UFEt_flux_list[i] != 0.0:
             # Store the old bounds for the UFEt reaction
             saved_bounds = model.reactions.get_by_id(UFEt_rxn_list[i]).bounds
@@ -149,18 +168,32 @@ def optimize_model(
                     model.objective = model.reactions.get_by_id(rxn.id)
                     solution = model.optimize(objective_sense="minimize")
                     minimized_IEX_flux_dict[rxn.id] = solution.objective_value
-                    print(f"{rxn.id}:\t{solution.objective_value}")
+                    if not parallel:
+                        print(f"\t\t{rxn.id}:\t{solution.objective_value}")
 
             # Restore the bounds for the minimized IEX reaction
             model.reactions.get_by_id(UFEt_rxn_list[i]).bounds = saved_bounds
+        else:
+            if not parallel:
+                print("\t\tSkipping reaction because the maximized flux is 0.0")
 
     # Create a dictionary of the minimized IEX fluxes
     model_rxn_bounds_dict = dict()
     for rxn in model.reactions:
         model_rxn_bounds_dict[rxn.id] = rxn.bounds
-    print(f"\n[DONE] Part 2: minimization complete for {model.name}")
 
-    return maximized_UFEt_flux_dict, minimized_IEX_flux_dict, model_rxn_bounds_dict
+    # Write the minimized IEX fluxes to a file
+    with open(f"{output_path}/{model.name}_opt_flux.txt", "w") as f:
+        for rxn_id in minimized_IEX_flux_dict:
+            f.write(f"{rxn_id}:\t{minimized_IEX_flux_dict[rxn_id]}\n")
+
+    if not parallel:
+        print(f"\n[DONE] Part 2: minimization complete for {model.name}")
+    else:
+        print(f"\n[DONE] 'optimize_model' workflow for {model_input}")
+
+    if return_outputs:
+        return maximized_UFEt_flux_dict, minimized_IEX_flux_dict, model_rxn_bounds_dict
 
 
 def optimize_model_mbx(
@@ -169,6 +202,8 @@ def optimize_model_mbx(
     output_path: str,
     silent: bool = False,
     verbose: bool = True,
+    return_outputs: bool = False,
+    parallel: bool = False,
 ) -> dict:
     """
     Optimize the model for each metabolite in the metabolomics data.
@@ -185,6 +220,10 @@ def optimize_model_mbx(
         If True, the function will not print the boundary changes and VMH name matching outputs.
     verbose : bool
         If True, the function will print the zero-valued optimization solution outputs.
+    return_outputs : bool
+        If True, the function will return the maximized and minimized FEX fluxes.
+    parallel : bool
+        If True, the function will not print the progress outputs.
 
     Returns
     -------
@@ -197,11 +236,14 @@ def optimize_model_mbx(
         If the model_input is not a path to a model or a COBRApy model object.
     """
     # Print the logo
-    print_logo(
-        tool="optimize_model_mbx",
-        tool_description="Optimize a model for each metabolite given the MBX data.",
-        version="0.1.0-beta",
-    )
+    if not parallel:
+        print_logo(
+            tool="optimize_model_mbx",
+            tool_description="Optimize a model for each metabolite given the MBX data.",
+            version="0.1.0-beta",
+        )
+    else:
+        print(f"\n[STARTED] 'optimize_model_mbx' workflow for {model_input}")
 
     # Load the model
     if isinstance(model_input, cobra.Model):
@@ -239,25 +281,52 @@ def optimize_model_mbx(
     model.add_cons_vars(mbx_constr)
     model.solver.update()
 
-    opt_solutions = dict()
-    # Optimize the model for each metabolite
-    print(f"\n[Optimizing the model {model.name} for each metabolite]")
+    # Optimize the model by minimizing the fluxes of reactions for each metabolite
+    min_opt_solutions = dict()
+    if not parallel:
+        print(f"\n[Minimizing the model {model.name} for each metabolite]")
     for rxn_id in [
         rxn.id
         for rxn in model.reactions
         if rxn.id.startswith("EX_") and rxn.id.endswith("[fe]")
     ]:
         model.objective = model.reactions.get_by_id(rxn_id)
-        solution = model.optimize()
+        solution = model.optimize(objective_sense="minimize")
         if solution.objective_value != 0.0 or verbose:
-            print(
-                f"\t{model.reactions.get_by_id(rxn_id).id}:\t{solution.objective_value}"
-            )
-        opt_solutions[rxn_id] = solution.objective_value
+            if not parallel:
+                print(
+                    f"\tMinimized: {model.reactions.get_by_id(rxn_id).id}:\t{solution.objective_value}"
+                )
+        min_opt_solutions[rxn_id] = solution.objective_value
+
+    # Optimize the model by maximizing the fluxes of reactions for each metabolite
+    max_opt_solutions = dict()
+    if not parallel:
+        print(f"\n[Maximizing the model {model.name} for each metabolite]")
+    for rxn_id in [
+        rxn.id
+        for rxn in model.reactions
+        if rxn.id.startswith("EX_") and rxn.id.endswith("[fe]")
+    ]:
+        model.objective = model.reactions.get_by_id(rxn_id)
+        solution = model.optimize(objective_sense="maximize")
+        if solution.objective_value != 0.0 or verbose:
+            if not parallel:
+                print(
+                    f"\tMaximized: {model.reactions.get_by_id(rxn_id).id}:\t{solution.objective_value}"
+                )
+        max_opt_solutions[rxn_id] = solution.objective_value
 
     # Save the results
-    with open(f"{output_path}/optimized_mbx_model_results.txt", "w") as f:
-        for rxn_id in opt_solutions:
-            f.write(f"{rxn_id}\t{opt_solutions[rxn_id]}\n")
+    with open(f"{output_path}/{model.name}_min_mbx_opt_flux.txt", "w") as f:
+        for rxn_id in min_opt_solutions:
+            f.write(f"{rxn_id}:\t{min_opt_solutions[rxn_id]}\n")
+    with open(f"{output_path}/{model.name}_max_mbx_opt_flux.txt", "w") as f:
+        for rxn_id in max_opt_solutions:
+            f.write(f"{rxn_id}:\t{max_opt_solutions[rxn_id]}\n")
 
-    return opt_solutions
+    if parallel:
+        print(f"\n[DONE] 'optimize_model_mbx' workflow for {model_input}")
+
+    if return_outputs:
+        return min_opt_solutions, max_opt_solutions

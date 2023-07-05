@@ -40,7 +40,7 @@ def print_logo(tool: str, tool_description: str, version: str) -> None:
     print(output)
 
 
-def load_model(model_path: str) -> cobra.Model:
+def load_model(model_path: str, simple_model_name: bool = True) -> cobra.Model:
     """
     Load a multi-species model into memory given a path to a model file in a
     COBRApy supported format.
@@ -49,6 +49,8 @@ def load_model(model_path: str) -> cobra.Model:
     ----------
     model_path : str
         Path to a multi-species model in any COBRApy supported format.
+    simple_model_name : bool
+        If True, the model name will be set to the file name with only the sample identifier (e.g., Case_1) and not the full file name (e.g., Case_1.xml).
 
     Returns
     -------
@@ -81,7 +83,13 @@ def load_model(model_path: str) -> cobra.Model:
     else:
         raise ValueError(f"Model format not supported for {model_path}")
 
-    model.name = os.path.basename(model_path).split(".")[0]
+    # Set the model name
+    if simple_model_name:
+        model_file_name = os.path.basename(model_path).split(".")[0]
+        model_name_search_pattern = re.compile(r"(Case|Control)_\d+")
+        model.name = model_name_search_pattern.search(model_file_name).group(0)
+    else:
+        model.name = os.path.basename(model_path).split(".")[0]
 
     print(f"\n[{model.name} loaded]")
 
@@ -231,14 +239,23 @@ def convert_model_format(
     -------
     None
 
+    Raises
+    ------
+    ValueError
+        If model_path is not a string or a COBRApy model.
+
     Notes
     -----
     If the metabolite charge is NaN, it is converted to a string.
     """
-    if type(model_path) == str:
-        model = load_model(model_path)
-    else:
+    if isinstance(model_path, str):
+        model = load_model(model_path=model_path, simple_model_name=False)
+    elif isinstance(model_path, cobra.Model):
         model = model_path
+    else:
+        raise ValueError(
+            f"model_path must be a string or a COBRApy model, not {type(model_path)}"
+        )
 
     print(f"\n[Converting model {model.name} to json format]")
 
@@ -294,6 +311,7 @@ def convert_string(s: str) -> str:
 
 
 def match_names_to_vmh(
+    model_input: str or cobra.Model,
     mbx_filepath: str,
     output_filepath: str,
     vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
@@ -309,6 +327,8 @@ def match_names_to_vmh(
 
     Parameters
     ----------
+    model_input : str or cobra.Model
+        Path to the model file or a COBRApy model loaded into memory.
     mbx_filepath : str
         Filepath to the MBX data.
     output_filepath : str
@@ -319,6 +339,11 @@ def match_names_to_vmh(
         Filepath to the manually matched keys.
     silent : bool
         If True, no matchings are printed.
+
+    Raises
+    ------
+    ValueError
+        If model_path is not a string or a COBRApy model.
 
     Returns
     -------
@@ -334,6 +359,14 @@ def match_names_to_vmh(
     """
 
     # Load the data
+    if isinstance(model_input, str):
+        model = load_model(model_path=model_input, simple_model_name=True)
+    elif isinstance(model_input, cobra.Model):
+        model = model_input
+    else:
+        raise ValueError(
+            f"model_path must be a string or a COBRApy model, not {type(model_input)}"
+        )
     vmh_db_df = pd.read_csv(vmh_db_filepath, index_col=0, header=0, delimiter="\t")
     mbx_data_df = pd.read_csv(mbx_filepath, index_col=0, header=0)
 
@@ -459,9 +492,7 @@ def match_names_to_vmh(
     if output_filepath[-1] != "/":
         output_filepath += "/"
 
-    key_output_filepath = (
-        f"{output_filepath}{mbx_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt"
-    )
+    key_output_filepath = f"{output_filepath}{model.name}_{mbx_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt"
 
     # Write out the matched identifiers to a .txt file
     with open(key_output_filepath, "w") as f:
@@ -515,7 +546,7 @@ def fetch_norm_sample_mbx_data(
     TypeError
         If model_input is not a cobra.Model or a filepath to a COBRApy model.
     ValueError
-        If the model does not have a metabolomics data attribute.
+        If the model has multiple or no metabolomics data attributes.
     """
     if isinstance(model_input, str):
         model = load_model(model_input)
@@ -550,6 +581,7 @@ def fetch_norm_sample_mbx_data(
             match_key_output_filepath += "/"
 
         match_names_to_vmh(
+            model_input=model,
             mbx_filepath=mbx_filepath,
             output_filepath=match_key_output_filepath,
             manual_matching_filepath=manual_matching_filepath,
@@ -558,7 +590,7 @@ def fetch_norm_sample_mbx_data(
 
     matched_mbx_names = dict()
     with open(
-        f"{match_key_output_filepath}{mbx_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt",
+        f"{match_key_output_filepath}{model.name}_{mbx_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt",
         "r",
     ) as f:
         matches = f.readlines()
@@ -576,9 +608,7 @@ def fetch_norm_sample_mbx_data(
     sample_id = []
     # Given the model name, find which row the sample ID is in
     for index in mbx_data.index:
-        if index in model.name:
-            sample_id.append(index)
-        elif index in model.name:
+        if index == model.name:
             sample_id.append(index)
 
     if len(sample_id) > 1:
@@ -725,12 +755,11 @@ def solve_mbx_constraints(model: cobra.Model, constraints: list) -> list:
 
     # Set the objective to be the sum of the absolute values of the slack variables
     model.objective = model.problem.Objective(
-        sum(slack_variables),
-        direction="min",
+        sum(slack_variables)
     )
 
     # Run optimization
-    solution = model.optimize()
+    solution = model.optimize(objective_sense="minimize")
 
     # Check if the solution is feasible
     if solution.status == "optimal":
