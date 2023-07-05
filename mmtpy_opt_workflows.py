@@ -164,9 +164,9 @@ def optimize_model(
 
 
 def optimize_model_mbx(
-    model_input: str = "example_data/models/microbiota_model_diet_Case_1_18_month.json",
-    mbx_path: str = "example_data/metabolomics_data.csv",
-    output_path: str = "example_outputs",
+    model_input: str,
+    mbx_path: str,
+    output_path: str,
     silent: bool = False,
     verbose: bool = True,
 ) -> dict:
