@@ -275,7 +275,7 @@ def optimize_model_mbx(
     )
 
     # Fetch the slack constraints if needed
-    mbx_constr = solve_mbx_constraints(model=model, constraints=mbx_constraints)
+    mbx_constr = solve_mbx_constraints(model=model, constraints=mbx_constraints, parallel=parallel)
 
     # Add the constraints to the model
     model.add_cons_vars(mbx_constr)

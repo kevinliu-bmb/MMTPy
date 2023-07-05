@@ -21,7 +21,6 @@ Galactose	gal
 N-Acetyl-D-galactosamine	acgal
 Arabinose (peak 1)	arab_L
 Arabinose (peak 2)	arab_L
-Arabinopyranose	arab_L
 Glucose	glc_D
 Glycine	gly
 Glycerol	glyc
@@ -44,9 +43,9 @@ Palmitic acid	hdca
 Stearic acid	ocdca
 Sebacic acid	sebacid
 Butanedioic acid	succ
-Myristic acid	ttdca
 Xylose	xyl_D
 Ribitol	rbt
 Xylitol	xylt
 Glyceric acid	glyc_R
 Propanal	ppal
+Myristic acid	ttdca

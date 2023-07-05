@@ -709,7 +709,9 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
     return constraint_list
 
 
-def solve_mbx_constraints(model: cobra.Model, constraints: list) -> list:
+def solve_mbx_constraints(
+    model: cobra.Model, constraints: list, parallel: bool = False
+) -> list:
     """
     Add slack variables to infeasible constraints and test if the solution is feasible.
 
@@ -719,6 +721,8 @@ def solve_mbx_constraints(model: cobra.Model, constraints: list) -> list:
         The model to be constrained.
     constraints : list
         A list of constraints to be added to the model.
+    parallel : bool, optional
+        If True, no detailed outputs will be printed, by default False
 
     Returns
     -------
@@ -754,9 +758,7 @@ def solve_mbx_constraints(model: cobra.Model, constraints: list) -> list:
     model.solver.update()
 
     # Set the objective to be the sum of the absolute values of the slack variables
-    model.objective = model.problem.Objective(
-        sum(slack_variables)
-    )
+    model.objective = model.problem.Objective(sum(slack_variables))
 
     # Run optimization
     solution = model.optimize(objective_sense="minimize")
@@ -778,9 +780,11 @@ def solve_mbx_constraints(model: cobra.Model, constraints: list) -> list:
     slack_pos_zero_val_names = []
     slack_neg_pos_val_names = []
     slack_neg_zero_val_names = []
-    print("\n\tSlack variables and primals:")
+    if not parallel:
+        print("\n\tSlack variables and primals:")
     for var in slack_variables:
-        print(f"\t\t{var.name}:\t{var.primal}")
+        if not parallel:
+            print(f"\t\t{var.name}:\t{var.primal}")
         if var.primal > 0 and var.name.endswith("_slack_pos"):
             slack_pos_pos_val_names.append(var.name.replace("_pos", ""))
         elif var.primal > 0 and var.name.endswith("_slack_neg"):
@@ -803,32 +807,36 @@ def solve_mbx_constraints(model: cobra.Model, constraints: list) -> list:
 
     # Adjust constraints based on slack variable values
     refined_constraints = []
-    print("\n\tSolved constraint details:")
+    if not parallel:
+        print("\n\tSolved constraint details:")
     for constraint in slack_constraints:
         if constraint.name in intersection_gt:
             # Adjust constraint to v_EX_fecal_metab_i > x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
             constraint.lb = 0
             constraint.ub = None
             refined_constraints.append(constraint)
-            print(
-                f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux greater than constrained value]"
-            )
+            if not parallel:
+                print(
+                    f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux greater than constrained value]"
+                )
         elif constraint.name in intersection_lt:
             # Adjust constraint to v_EX_fecal_metab_i < x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
             constraint.lb = None
             constraint.ub = 0
             refined_constraints.append(constraint)
-            print(
-                f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux less than constrained value]"
-            )
+            if not parallel:
+                print(
+                    f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux less than constrained value]"
+                )
         elif constraint.name in intersection_eq:
             # Adjust constraint to v_EX_fecal_metab_i = x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
             constraint.lb = 0
             constraint.ub = 0
             refined_constraints.append(constraint)
-            print(
-                f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Original, flux equal to constrained value]"
-            )
+            if not parallel:
+                print(
+                    f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Original, flux equal to constrained value]"
+                )
 
     # Remove the slack variables and constraints from the model
     model.remove_cons_vars(slack_variables)
