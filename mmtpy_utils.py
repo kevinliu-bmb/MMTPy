@@ -91,7 +91,10 @@ def load_model(model_path: str) -> cobra.Model:
 
 
 def set_default_bounds(
-    model: cobra.Model, source: str = "MMTpy", rxn_type: str = "all"
+    model: cobra.Model,
+    source: str = "MMTpy",
+    rxn_type: str = "all",
+    silent: bool = False,
 ) -> bool:
     """
     Set the bounds of the model's reactions according to conventions;
@@ -110,6 +113,8 @@ def set_default_bounds(
     rxn_type : str, optional
         The type of reactions whose bounds are to be set, by default "all";
         options are of either "all", "FEX", "UFEt", "IEX", "DUt", or "commBiomass".
+    silent : bool, optional
+        Whether to print the changes, by default False.
 
     Returns
     -------
@@ -194,7 +199,7 @@ def set_default_bounds(
     n_changed_bounds = 0
     # Print out the changes
     for rxn, bounds in saved_bounds.items():
-        if bounds != new_bounds[rxn]:
+        if bounds != new_bounds[rxn] and silent is False:
             print(f"\tChanged bounds for {rxn} from {bounds} to {new_bounds[rxn]}")
             n_changed_bounds += 1
 
@@ -294,6 +299,7 @@ def match_names_to_vmh(
     output_filepath: str,
     vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
+    silent: bool = False,
 ) -> None:
     """
     Map the metabolite names detected by MBX to VMH identifiers for a given
@@ -310,6 +316,10 @@ def match_names_to_vmh(
         Filepath (including .txt file name) for saving the matching keys.
     vmh_db_filepath : str
         Filepath to the VMH database of metabolites and their identifiers.
+    manual_matching_filepath : str
+        Filepath to the manually matched keys.
+    silent : bool
+        If True, no matchings are printed.
 
     Returns
     -------
@@ -396,17 +406,20 @@ def match_names_to_vmh(
     for vmh_id, vmh_inchikey in vmh_inchikey_dict.items():
         for mbx_name, pubchempy_inchikey in inchikey_names_dict.items():
             if vmh_inchikey != "nan" and vmh_inchikey == pubchempy_inchikey:
-                print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using InChIKey")
+                if not silent:
+                    print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using InChIKey")
                 pubchempy_matched_dict[mbx_name] = vmh_id
     for vmh_id, vmh_cid in vmh_cid_dict.items():
         for mbx_name, pubchempy_cid in cid_names_dict.items():
             if vmh_cid != "nan" and vmh_cid == pubchempy_cid:
-                print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using CID")
+                if not silent:
+                    print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using CID")
                 pubchempy_matched_dict[mbx_name] = vmh_id
     for vmh_id, vmh_inchi in vmh_inchistring_dict.items():
         for mbx_name, pubchempy_inchi in inchi_names_dict.items():
             if vmh_inchi != "nan" and vmh_inchi == pubchempy_inchi:
-                print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using InChI")
+                if not silent:
+                    print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using InChI")
                 pubchempy_matched_dict[mbx_name] = vmh_id
 
     # Combine the direct matching dictionary with the pubchempy matched dictionary
@@ -418,7 +431,8 @@ def match_names_to_vmh(
         for vmh_id, vmh_smiles in vmh_smiles_dict.items():
             for mbx_name, pubchempy_smiles in smiles_names_dict.items():
                 if vmh_smiles != "nan" and vmh_smiles == pubchempy_smiles:
-                    print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using SMILES")
+                    if not silent:
+                        print(f"\t\tMatched '{mbx_name}' to '{vmh_id}' using SMILES")
                     pubchempy_matched_dict[mbx_name] = vmh_id
 
     print(
@@ -470,6 +484,7 @@ def fetch_norm_sample_mbx_data(
     use_existing_matched_keys: bool = False,
     existing_keys_path: str = None,
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
+    silent: bool = False,
 ) -> dict:
     """
     Generate a dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
@@ -488,8 +503,8 @@ def fetch_norm_sample_mbx_data(
         If use_existing_matched_keys is true, load the keys; defaults to None.
     manual_matching_filepath : str (optional)
         Filepath to the manually matched key file; defaults to the work directory if a path is not supplied by the user.
-    show_logo : bool (optional)
-        Specification for printing the logo and function details.
+    silent : bool
+        Whether to print out the progress of the VMH name matching function; defaults to False.
 
     Returns
     -------
@@ -539,6 +554,7 @@ def fetch_norm_sample_mbx_data(
             mbx_filepath=mbx_filepath,
             output_filepath=match_key_output_filepath,
             manual_matching_filepath=manual_matching_filepath,
+            silent=silent,
         )
 
     matched_mbx_names = dict()
@@ -593,7 +609,7 @@ def fetch_norm_sample_mbx_data(
     norm_vmh_id_vals = {k: v / total_val for k, v in vmh_id_values.items()}
 
     print(
-        f"\n\tNumber of name-matched and normalized metabolites in the model: {len(norm_vmh_id_vals)}/{len(metab_raw_vals_dict)} ({round(len(norm_vmh_id_vals)/len(metab_raw_vals_dict)*100, 2)}%)"
+        f"\n\t[Number of name-matched and normalized metabolites in the model: {len(norm_vmh_id_vals)}/{len(metab_raw_vals_dict)} ({round(len(norm_vmh_id_vals)/len(metab_raw_vals_dict)*100, 2)}%)]"
     )
     print(f"\n[Returning normalized sample-specific MBX values for {sample_id}]")
 
