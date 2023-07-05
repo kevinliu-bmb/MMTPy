@@ -6,8 +6,6 @@ import cobra
 import pandas as pd
 import pubchempy as pcp
 
-version = "0.1.0"
-
 
 def print_logo(tool: str, tool_description: str, version: str) -> None:
     """
@@ -199,17 +197,18 @@ def set_default_bounds(
     n_changed_bounds = 0
     # Print out the changes
     for rxn, bounds in saved_bounds.items():
-        if bounds != new_bounds[rxn] and silent is False:
-            print(f"\tChanged bounds for {rxn} from {bounds} to {new_bounds[rxn]}")
+        if bounds != new_bounds[rxn]:
+            if not silent:
+                print(f"\tChanged bounds for {rxn} from {bounds} to {new_bounds[rxn]}")
             n_changed_bounds += 1
 
     if n_changed_bounds == 0:
         bounds_changed = False
-        print("\n\tNo bounds were changed")
+        print("\tNo bounds were changed")
     else:
         bounds_changed = True
         print(
-            f"\n\tChanged {n_changed_bounds}/{len(saved_bounds)} {rxn_type} reaction bounds for {model.name}"
+            f"\tChanged {n_changed_bounds}/{len(saved_bounds)} {rxn_type} reaction bounds for {model.name}"
         )
 
     return bounds_changed
@@ -680,30 +679,26 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
     return constraint_list
 
 
-def slack_constraints(model: cobra.Model, constraints: list) -> list:
-    feasible_constraints = []
-    infeasible_constraints = []
+def solve_mbx_constraints(model: cobra.Model, constraints: list) -> list:
+    """
+    Add slack variables to infeasible constraints and test if the solution is feasible.
 
-    print(f"\n[Testing if the constraints are feasible with slack variables]")
-    for constraint in constraints:
-        model.add_cons_vars(constraint)
-        model.solver.update()
-        model.objective = 0
-        solution = model.optimize()
+    Parameters
+    ----------
+    model : cobra.Model
+        The model to be constrained.
+    constraints : list
+        A list of constraints to be added to the model.
 
-        if solution.status == "optimal":
-            print(f"\tConstraint {constraint.name} is feasible.")
-            feasible_constraints.append(constraint)
-        else:
-            print(f"\tConstraint {constraint.name} is infeasible.")
-            infeasible_constraints.append(constraint)
-            model.remove_cons_vars(constraint)
-            model.solver.update()
-
-    new_constraints = []
+    Returns
+    -------
+    list
+        A list of the constraints added to the model.
+    """
+    slack_constraints = []
     slack_variables = []
-    print(f"\n[Adding slack variables to infeasible constraints]")
-    for constraint in infeasible_constraints:
+    print(f"\n[Adding slack variables to all constraints]")
+    for constraint in constraints:
         # Introduce a slack variable to the constraint
         slack_variable_pos = model.problem.Variable(
             constraint.name + "_slack_pos", lb=0
@@ -722,10 +717,10 @@ def slack_constraints(model: cobra.Model, constraints: list) -> list:
             name=constraint.name + "_slack",
         )
 
-        new_constraints.append(new_constraint)
+        slack_constraints.append(new_constraint)
 
     # Add the new constraints to the model
-    model.add_cons_vars(new_constraints)
+    model.add_cons_vars(slack_constraints)
     model.solver.update()
 
     # Set the objective to be the sum of the absolute values of the slack variables
@@ -737,12 +732,24 @@ def slack_constraints(model: cobra.Model, constraints: list) -> list:
     # Run optimization
     solution = model.optimize()
 
+    # Check if the solution is feasible
+    if solution.status == "optimal":
+        print(
+            "\n[The solution is feasible with slack variables added to all constraints]"
+        )
+    elif solution.status == "infeasible":
+        print(
+            "\n[The solution is infeasible with slack variables added to all constraints]"
+        )
+
+    print("\tRefining the constraints, and testing if the solution is feasible")
+
     # After optimizing the model, check the optimal values of the slack variables and set the constraints accordingly
     slack_pos_pos_val_names = []
     slack_pos_zero_val_names = []
     slack_neg_pos_val_names = []
     slack_neg_zero_val_names = []
-    print("\tSlack variables and primals:")
+    print("\n\tSlack variables and primals:")
     for var in slack_variables:
         print(f"\t\t{var.name}:\t{var.primal}")
         if var.primal > 0 and var.name.endswith("_slack_pos"):
@@ -766,33 +773,39 @@ def slack_constraints(model: cobra.Model, constraints: list) -> list:
     )
 
     # Adjust constraints based on slack variable values
-    slacked_constraints = []
-    print("\n\tSlack constraints and bounds:")
-    for constraint in new_constraints:
+    refined_constraints = []
+    print("\n\tSolved constraint details:")
+    for constraint in slack_constraints:
         if constraint.name in intersection_gt:
             # Adjust constraint to v_EX_fecal_metab_i > x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
             constraint.lb = 0
             constraint.ub = None
-            slacked_constraints.append(constraint)
-            print(f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub})")
+            refined_constraints.append(constraint)
+            print(
+                f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux greater than constrained value]"
+            )
         elif constraint.name in intersection_lt:
             # Adjust constraint to v_EX_fecal_metab_i < x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
             constraint.lb = None
             constraint.ub = 0
-            slacked_constraints.append(constraint)
-            print(f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub})")
+            refined_constraints.append(constraint)
+            print(
+                f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux less than constrained value]"
+            )
         elif constraint.name in intersection_eq:
             # Adjust constraint to v_EX_fecal_metab_i = x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
             constraint.lb = 0
             constraint.ub = 0
-            print(f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub})")
+            refined_constraints.append(constraint)
+            print(
+                f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Original, flux equal to constrained value]"
+            )
 
     # Remove the slack variables and constraints from the model
     model.remove_cons_vars(slack_variables)
-    model.remove_cons_vars(new_constraints)
-    model.remove_cons_vars(feasible_constraints)
+    model.remove_cons_vars(slack_constraints)
     model.solver.update()
 
-    print(f"\n[Returning feasible and slacked constraints]")
+    print(f"\n[Returning solved constraints]")
 
-    return feasible_constraints, slacked_constraints
+    return refined_constraints

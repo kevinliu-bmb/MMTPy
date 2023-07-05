@@ -6,11 +6,13 @@ from mmtpy_utils import (
     load_model,
     print_logo,
     set_default_bounds,
-    slack_constraints,
+    solve_mbx_constraints,
 )
 
 
-def optimize_model(model_input: cobra.Model or str, add_1ba: bool = False) -> dict:
+def optimize_model(
+    model_input: cobra.Model or str, add_1ba: bool = False, silent: bool = False
+) -> dict:
     """
     Optimizes a multi-species model of metabolism by maximizing the flux through
     all fecal transporter (UFEt) reactions and minimizing the flux through all
@@ -28,6 +30,8 @@ def optimize_model(model_input: cobra.Model or str, add_1ba: bool = False) -> di
     add_1ba : bool, optional
         If True, will set diet 1ba bounds to the model before optimizing, by
         default False.
+    silent : bool, optional
+        If True, will suppress all set_default_bounds() output, by default False.
 
     Returns
     -------
@@ -61,6 +65,9 @@ def optimize_model(model_input: cobra.Model or str, add_1ba: bool = False) -> di
         raise ValueError(
             "The model_input must be a path to a model or a COBRApy model object."
         )
+
+    # Set the default bounds
+    set_default_bounds(model, rxn_type="FEX", silent=silent)
 
     # Add diet 1ba if desired
     if add_1ba:
@@ -161,7 +168,7 @@ def optimize_model_mbx(
     mbx_path: str = "example_data/metabolomics_data.csv",
     output_path: str = "example_outputs",
     silent: bool = False,
-    verbose: bool = False,
+    verbose: bool = True,
 ) -> dict:
     """
     Optimize the model for each metabolite in the metabolomics data.
@@ -183,6 +190,11 @@ def optimize_model_mbx(
     -------
     dict
         Dictionary of the optimized solutions for each metabolite.
+
+    Raises
+    ------
+    ValueError
+        If the model_input is not a path to a model or a COBRApy model object.
     """
     # Print the logo
     print_logo(
@@ -216,13 +228,15 @@ def optimize_model_mbx(
     set_default_bounds(model=model, rxn_type="FEX", silent=silent)
 
     # Fetch and test the constraint list
-    mbx_constraints = fetch_mbx_constr_list(model=model, mbx_metab_norm_dict=mbx_metab_norm_dict)
+    mbx_constraints = fetch_mbx_constr_list(
+        model=model, mbx_metab_norm_dict=mbx_metab_norm_dict
+    )
 
     # Fetch the slack constraints if needed
-    feasible_constr, slacked_constr = slack_constraints(model=model, constraints=mbx_constraints)
+    mbx_constr = solve_mbx_constraints(model=model, constraints=mbx_constraints)
 
     # Add the constraints to the model
-    model.add_cons_vars(feasible_constr + slacked_constr)
+    model.add_cons_vars(mbx_constr)
     model.solver.update()
 
     opt_solutions = dict()
@@ -235,7 +249,7 @@ def optimize_model_mbx(
     ]:
         model.objective = model.reactions.get_by_id(rxn_id)
         solution = model.optimize()
-        if not verbose and solution.objective_value != 0.0:
+        if solution.objective_value != 0.0 or verbose:
             print(
                 f"\t{model.reactions.get_by_id(rxn_id).id}:\t{solution.objective_value}"
             )
