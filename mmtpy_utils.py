@@ -9,7 +9,7 @@ import pubchempy as pcp
 version = "0.1.0"
 
 
-def print_logo(tool: str, tool_description: str, version: str):
+def print_logo(tool: str, tool_description: str, version: str) -> None:
     """
     Print the logo, tool name, and version for the tool.
 
@@ -261,7 +261,7 @@ def convert_model_format(
     print(f"\n[{model.name} converted to json format]")
 
 
-def convert_string(s) -> str:
+def convert_string(s: str) -> str:
     """
     Convert a string to a standard format for matching.
 

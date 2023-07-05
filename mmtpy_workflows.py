@@ -162,7 +162,7 @@ def optimize_model_mbx(
     output_path: str = "example_outputs",
     silent: bool = False,
     verbose: bool = False,
-):
+) -> dict:
     """
     Optimize the model for each metabolite in the metabolomics data.
 
