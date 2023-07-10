@@ -547,6 +547,8 @@ def fetch_norm_sample_mbx_data(
         If model_input is not a cobra.Model or a filepath to a COBRApy model.
     ValueError
         If the model has multiple or no metabolomics data attributes.
+    ValueError
+        If the model mbx data values are not numeric after setting to float.
     """
     if isinstance(model_input, str):
         model = load_model(model_input)
