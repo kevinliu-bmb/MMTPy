@@ -4,3 +4,5 @@ MMTpy_tutorial.ipynb
 .DS_Store
 __pycache__/*
 example_data/models/problematic_models/*
+.vscode/settings.json
+problematic_model_outputs/*

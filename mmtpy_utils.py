@@ -622,7 +622,16 @@ def fetch_norm_sample_mbx_data(
     sample_mbx_data = mbx_data.loc[sample_id][min(idx_list) :]
 
     # Create a dictionary of metabolite names and their concentrations
-    metab_raw_vals_dict = {name: float(conc) for name, conc in sample_mbx_data.items()}
+    metab_raw_vals_dict = {name: conc for name, conc in sample_mbx_data.items()}
+
+    # If the values of metab_raw_vals_dict are strings, remove any commas and convert them to floats
+    for k, v in metab_raw_vals_dict.items():
+        if isinstance(v, str):
+            metab_raw_vals_dict[k] = float(v.replace(",", ""))
+
+    # Check if all values in metab_raw_vals_dict are floats
+    if not all(isinstance(v, float) for v in metab_raw_vals_dict.values()):
+        raise ValueError("Not all values in metab_raw_vals_dict are floats.")
 
     # Create a dictionary of VMH IDs and their corresponding metabolite values if the metabolite is in the model
     vmh_id_values = dict()
@@ -699,10 +708,10 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
         model.remove_cons_vars(constraint_list)
         model.solver.update()
         print(
-            "\n[Warning: the solution is infeasible by introducing the constraints without slack variables]"
+            "\n\tWarning: the solution is infeasible by introducing the constraints without slack variables"
         )
     else:
-        print("\n[The solution is feasible without adding slack variables]")
+        print("\n\tThe solution is feasible without adding slack variables")
         model.remove_cons_vars(constraint_list)
         model.solver.update()
 
@@ -731,7 +740,7 @@ def solve_mbx_constraints(
     """
     slack_constraints = []
     slack_variables = []
-    print(f"\n[Adding slack variables to all constraints]")
+    print(f"\n[Introducing slack variables to all constraints]")
     for constraint in constraints:
         # Introduce a slack variable to the constraint
         slack_variable_pos = model.problem.Variable(
@@ -766,14 +775,14 @@ def solve_mbx_constraints(
     # Check if the solution is feasible
     if solution.status == "optimal":
         print(
-            "\n[The solution is feasible with slack variables added to all constraints]"
+            "\n\tThe solution is feasible with slack variables added to all constraints"
         )
     elif solution.status == "infeasible":
         print(
-            "\n[The solution is infeasible with slack variables added to all constraints]"
+            "\n\tWarning: The solution is infeasible with slack variables added to all constraints"
         )
 
-    print("\tRefining the constraints, and testing if the solution is feasible")
+    print("\n[Simplifying the constraints based on the slack variable primal values]")
 
     # After optimizing the model, check the optimal values of the slack variables and set the constraints accordingly
     slack_pos_pos_val_names = []

@@ -131,9 +131,9 @@ def optimize_model(
     if not parallel:
         print(f"\n[DONE] Part 1: maximization complete for {model.name}")
 
-    #########################################################
-    # Part 2: minimize the flux through all IEX reactions
-    #########################################################
+        #########################################################
+        # Part 2: minimize the flux through all IEX reactions
+        #########################################################
 
         print(f"\n[STARTED] Part 2: minimizing IEX fluxes for {model.name}")
 
@@ -275,7 +275,9 @@ def optimize_model_mbx(
     )
 
     # Fetch the slack constraints if needed
-    mbx_constr = solve_mbx_constraints(model=model, constraints=mbx_constraints, parallel=parallel)
+    mbx_constr = solve_mbx_constraints(
+        model=model, constraints=mbx_constraints, parallel=parallel
+    )
 
     # Add the constraints to the model
     model.add_cons_vars(mbx_constr)
