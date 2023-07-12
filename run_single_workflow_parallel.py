@@ -6,7 +6,7 @@ from mmtpy_utils import convert_model_format
 
 # Define paths
 model_path = "example_data/models"
-mbx_path = "example_data/metabolomics_data_assert_non_large_value.csv"
+mbx_path = "example_data/metabolomics_data.csv"
 output_path = "example_outputs"
 
 # Select workflow (either "optimize_model" or "optimize_model_mbx")
