@@ -95,7 +95,7 @@ EX_ac[fe]:	0.0
 EX_ac_amn_b_gly[fe]:	0.0
 EX_ac_amn_b_gly_glc[fe]:	0.0
 EX_acerA[fe]:	0.0
-EX_acgal[fe]:	0.42995018608427976
+EX_acgal[fe]:	0.42995018608427965
 EX_acgalglcur[fe]:	0.0
 EX_acgalidour2s[fe]:	0.0
 EX_acgalidour[fe]:	0.0
@@ -140,7 +140,7 @@ EX_amylose300[fe]:	0.0
 EX_anzp[fe]:	0.0
 EX_apio_D[fe]:	0.0
 EX_arab_D[fe]:	0.0
-EX_arab_L[fe]:	0.5272183914356728
+EX_arab_L[fe]:	0.7418818117616112
 EX_arabinan101[fe]:	0.0
 EX_arabinogal[fe]:	0.0
 EX_arabinoxyl[fe]:	0.0
@@ -148,7 +148,7 @@ EX_arabttr[fe]:	0.0
 EX_arg_L[fe]:	0.0
 EX_arsenb[fe]:	0.0
 EX_asn_L[fe]:	0.0
-EX_asp_L[fe]:	0.43401301932224007
+EX_asp_L[fe]:	0.43401301932223985
 EX_atvacid[fe]:	0.0
 EX_atvacylgluc[fe]:	0.0
 EX_atvethgluc[fe]:	0.0
@@ -292,14 +292,14 @@ EX_fe2[fe]:	0.0
 EX_fe3[fe]:	0.0
 EX_fol[fe]:	0.0
 EX_for[fe]:	0.0
-EX_fru[fe]:	0.6493568178102892
+EX_fru[fe]:	0.649356817810289
 EX_fuc_L[fe]:	0.0
 EX_fum[fe]:	0.0
 EX_fvs[fe]:	0.0
 EX_fvsgluc[fe]:	0.0
 EX_fvstet[fe]:	0.0
 EX_fvstetglu[fe]:	0.0
-EX_gal[fe]:	1.28550256136634
+EX_gal[fe]:	1.2855025613663396
 EX_galmannan[fe]:	0.0
 EX_galt[fe]:	0.0
 EX_galur[fe]:	0.0
@@ -308,7 +308,7 @@ EX_gam[fe]:	0.0
 EX_gbbtn[fe]:	0.0
 EX_gchola[fe]:	0.0
 EX_glc3meacp[fe]:	0.0
-EX_glc_D[fe]:	37.88924944464398
+EX_glc_D[fe]:	0.0
 EX_glcmannan[fe]:	0.0
 EX_glcn[fe]:	0.0
 EX_glcur[fe]:	0.0
@@ -409,7 +409,7 @@ EX_kestopt[fe]:	0.0
 EX_kestottr[fe]:	0.0
 EX_kprofen[fe]:	0.0
 EX_kprofen_glc[fe]:	0.0
-EX_lac_D[fe]:	0.7568868361909681
+EX_lac_D[fe]:	0.7568868361909677
 EX_lac_L[fe]:	0.0
 EX_lactl[fe]:	0.0
 EX_lcts[fe]:	0.0
@@ -427,7 +427,7 @@ EX_lstn[fe]:	0.0
 EX_lstnm4[fe]:	0.0
 EX_lstnm7[fe]:	0.0
 EX_lys_L[fe]:	0.0
-EX_mal_L[fe]:	0.3224442552698905
+EX_mal_L[fe]:	0.32244425526989046
 EX_malt[fe]:	0.0
 EX_malttr[fe]:	0.0
 EX_man[fe]:	0.0
@@ -438,7 +438,7 @@ EX_mdz[fe]:	0.0
 EX_mdz_glc[fe]:	0.0
 EX_mdzglc[fe]:	0.0
 EX_melib[fe]:	0.0
-EX_meoh[fe]:	0.010516907265759823
+EX_meoh[fe]:	0.010516907265760045
 EX_met_D[fe]:	0.0
 EX_met_L[fe]:	0.0
 EX_metala[fe]:	0.0
@@ -501,7 +501,7 @@ EX_pime[fe]:	0.0
 EX_pnto_R[fe]:	0.0
 EX_ppa[fe]:	0.0
 EX_ppi[fe]:	0.0
-EX_pro_L[fe]:	0.43873539306575876
+EX_pro_L[fe]:	0.43873539306575854
 EX_prob[fe]:	0.0
 EX_prob_glc[fe]:	0.0
 EX_pront[fe]:	0.0
@@ -583,7 +583,7 @@ EX_stg_m4[fe]:	0.0
 EX_strch1[fe]:	0.0
 EX_strch2[fe]:	0.0
 EX_stys[fe]:	0.0
-EX_succ[fe]:	0.4063009752665646
+EX_succ[fe]:	0.4063009752665644
 EX_sucr[fe]:	0.0
 EX_sulfac[fe]:	0.0
 EX_sulfp[fe]:	0.0
@@ -642,7 +642,7 @@ EX_urea[fe]:	2.800685162e-06
 EX_uri[fe]:	0.0
 EX_val_L[fe]:	0.0
 EX_xan[fe]:	0.0
-EX_xyl_D[fe]:	0.2940876457829374
+EX_xyl_D[fe]:	0.29408764578293745
 EX_xylan[fe]:	0.0
 EX_xylottr[fe]:	0.0
 EX_xyluglc[fe]:	0.0
