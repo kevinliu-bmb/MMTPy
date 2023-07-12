@@ -1,11 +1,9 @@
 2-Hydroxy-3-methylbutyric acid	2hiv
 2-Keto-3-methylvaleric acid	3mop
 2-Hydroxyisocaproic acid	2hxic_L
-Threonine	thr_L
 Benzenepropanoic acid	pppn
 Hexanoic acid	caproic
 Methylglutaric acid	3mglutr
-Decanoic acid	dca
 Malic acid	mal_L
 Lactic acid	lac_D
 2-Deoxy-D-ribose	drib
@@ -19,35 +17,35 @@ Tagatose	tagat_D
 Glucose	glc_D
 Allose	all_D
 Galactaric acid	galct_D
-N-Acetyl-D-galactosamine	acgal
-Acetylgalactosamine	acgal
 Galactose	gal
-Xylitol	xylt
 3-Hydroxyphenylacetic acid	3hphac
-Arabinose (peak 1)	arab_L
+N-Acetyl-D-galactosamine	acgal
 Arabinose (peak 2)	arab_L
 Arabinopyranose	arab_L
-Glycine	gly
 Glycerol	glyc
 Pentanoic acid	M03134
 Mannose	man
 Proline	pro_L
 Serine	ser_L
+Threonine	thr_L
+alpha-Ketoisovaleric acid	3mob
 Aspartic acid	asp_L
 Butanoic acid	but
 Benzoic acid	bz
 Nonanoic acid	C01601
+Decanoic acid	dca
 Lauric acid	ddca
 2.3 butanediol	dtt
 Gluconic acid	glcn
 Glycolic acid	glyclt
+Palmitic acid	hdca
 Stearic acid	ocdca
 Sebacic acid	sebacid
 Butanedioic acid	succ
 Myristic acid	ttdca
 Xylose	xyl_D
-alpha-Ketoisovaleric acid	3mob
-Glyceric acid	glyc_R
-Palmitic acid	hdca
-Propanal	ppal
 Ribitol	rbt
+Xylitol	xylt
+Glycine	gly
+Glyceric acid	glyc_R
+Propanal	ppal
