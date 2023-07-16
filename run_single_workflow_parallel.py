@@ -9,11 +9,20 @@ model_path = "example_data/models"
 mbx_path = "example_data/metabolomics_data.csv"
 output_path = "example_outputs"
 
+# Add 1BA to the model
+add_1ba = False
+
 # Select workflow (either "optimize_model" or "optimize_model_mbx")
 workflow = "optimize_model_mbx"
 
 
-def main(model_path, mbx_path, output_path, workflow):
+def main(
+    model_path: str,
+    mbx_path: str,
+    output_path: str,
+    workflow: str,
+    add_1ba: bool = False,
+):
     # Search through the model directory and find all the JSON and MATLAB files
     model_files = [f for f in os.listdir(model_path) if f.endswith(".json")]
     model_files_mat = [f for f in os.listdir(model_path) if f.endswith(".mat")]
@@ -42,7 +51,7 @@ def main(model_path, mbx_path, output_path, workflow):
                 args = [
                     f"{model_path}/{model_file}",
                     output_path,
-                    False,
+                    add_1ba,
                     True,
                     False,
                     True,
@@ -53,6 +62,7 @@ def main(model_path, mbx_path, output_path, workflow):
                     f"{model_path}/{model_file}",
                     mbx_path,
                     output_path,
+                    add_1ba,
                     True,
                     False,
                     False,

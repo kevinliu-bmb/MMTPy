@@ -200,6 +200,7 @@ def optimize_model_mbx(
     model_input: str,
     mbx_path: str,
     output_path: str,
+    add_1ba: bool = False,
     silent: bool = False,
     verbose: bool = True,
     return_outputs: bool = False,
@@ -216,6 +217,9 @@ def optimize_model_mbx(
         Path to the metabolomics data file.
     output_path : str
         Path to the output directory.
+    add_1ba : bool, optional
+        If True, will set diet 1ba bounds to the model before optimizing, by
+        settings the bounds of all diet reactions to (-1000.0, 0.0).
     silent : bool
         If True, the function will not print the boundary changes and VMH name matching outputs.
     verbose : bool
@@ -268,6 +272,19 @@ def optimize_model_mbx(
 
     # Set all fecal exchange reaction lower bounds to zero
     set_default_bounds(model=model, rxn_type="FEX", silent=silent)
+
+    # Add diet 1ba if desired
+    if add_1ba:
+        for rxn in model.reactions:
+            # TODO check if all related reactions are included
+            if "Diet_" in rxn.id and rxn.lower_bound != 0:
+                if (
+                    "dgchol" in rxn.id
+                    or "gchola" in rxn.id
+                    or "tchola" in rxn.id
+                    or "tdchola" in rxn.id
+                ):
+                    model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 0.0)
 
     # Fetch and test the constraint list
     mbx_constraints = fetch_mbx_constr_list(
