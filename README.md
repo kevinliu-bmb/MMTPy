@@ -97,7 +97,7 @@ To run a single instance of the FBA simulation workflows using COBRApy, import t
    > optimize_model_mbx(model_input=model, mbx_path="example_data/metabolomics_data.csv", output_path="example_outputs")
    ```
 
-To launch multiple instances of both FBA simulation workflows simultaneously for more than one model in parallel, configure the relevant paths in the ```run_workflows_parallel.py``` script, save the script, and run it in the command line, as shown in the example below. *This option is not recommended for models with large numbers of reactions and/or metabolites, as the 'optimize_model' workflow tends to be more computationally intensive than the 'optimize_model_mbx' workflow and tends to result in a longer runtime.*
+To launch multiple instances of both FBA simulation workflows simultaneously for more than one model in parallel, configure the relevant paths in the ```run_workflows_parallel.py``` script, save the script, and run it in the command line, as shown in the example below. *This option is not recommended for models with large numbers of reactions and/or metabolites, as the 'optimize_model' workflow tends to be more computationally intensive than the 'optimize_model_mbx' workflow and may result in a longer overall runtime.*
 
    ```sh
    python run_workflows_parallel.py
