@@ -1,6 +1,6 @@
 # MMTpy - Microbiome Modeling Toolbox Extensions
 
-<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+<!-- TOP OF README.MD -->
 <a name="readme-top"></a>
 
 <!-- PROJECT SHIELDS -->
@@ -85,30 +85,45 @@ _Several core functionalities of MMTpy rely on the [COBRApy](https://github.com/
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-To run the naïve FBA simulations without constraining metabolite uptake/secretion fluxes using COBRApy, import the ```mmtpy_workflows.py``` script using a Python console (tested on Python 3.9.16) under the cloned GitHub repository folder, as shown in the two examples below.
+To run a single instance of the FBA simulation workflows using COBRApy, import the ```mmtpy_workflows.py``` script using a Python console (tested on Python 3.9.16) under the cloned GitHub repository folder, as shown in the two examples below.
 
    ```python
-   > from mmtpy_workflows import *
-   > optimize_model(model_input=model) # optimize a COBRApy model already loaded into memory.
-   > optimize_model(model_input="your_model_path.mat") # optimize an unloaded COBRApy model.
-   > optimize_model_mbx() # optimize a COBRApy model with metagenomics (MBX) data using example data.
+   > from mmtpy_opt_workflows import optimize_model, optimize_model_mbx
+   > # run naive FBA simulations on a model already loaded into memory.
+   > optimize_model(model_input="example_data/models/microbiota_model_diet_Case_1_18_month.json", output_path="example_outputs")
+   > # model input can also be a path to a .mat or .json file.
+   > optimize_model(model_input=model, output_path="example_outputs")
+   > # run metabolomics data-constrained FBA simulations.
+   > optimize_model_mbx(model_input=model, mbx_path="example_data/metabolomics_data.csv", output_path="example_outputs")
+   ```
+
+To launch multiple instances of both FBA simulation workflows simultaneously for more than one model in parallel, configure the relevant paths in the ```run_workflows_parallel.py``` script, save the script, and run it in the command line, as shown in the example below. *This option is not recommended for models with large numbers of reactions and/or metabolites, as the 'optimize_model' workflow tends to be more computationally intensive than the 'optimize_model_mbx' workflow and tends to result in a longer runtime.*
+
+   ```sh
+   python run_workflows_parallel.py
+   ```
+
+To launch multiple instances of a single FBA simulation workflow simultaneously for more than one model in parallel, configure the relevant paths and workflow type in the ```run_single_workflows_parallel.py``` script, save the script, and run it in the command line, as shown in the example below. *This option is not recommended for runs that contain a large number of input models, as the script will attempt to load all models into memory simultaneously, which may result in memory errors.*
+
+   ```sh
+   python run_single_workflows_parallel.py
    ```
 
 Other convenient tools, such as ```set_default_bounds()``` for resetting the model reactions bounds and ```convert_model_format()``` to convert any COBRApy-supported model format to JSON format, can be called within a Python console after importing ```cobra_utils.py```.
 
    ```python
-   > from mmtpy_utils import *
-   > # (re)set the bounds of the model (excluding dietary constraints) to default values based on MMTpy conventions.
-   > set_default_bounds(model=your_model, source="MMTpy")
+   > from mmtpy_utils import set_default_bounds, convert_model_format
+   > # set the model bounds to MMTpy default conventions.
+   > set_default_bounds(model=model, source="MMTpy")
    > # convert a COBRApy supported model format to JSON format.
-   > convert_model_format(model_path="your_model_path.mat", output_path="your_desired_output_path")
+   > convert_model_format(model_path=model, output_path="example_data/models")
    ```
 
-An additional feature we offer from this project is the ability to match metabolite names from GC-MS quantified and annotated output metabolite names, which can include common names or any other non-standard biochemical nomenclature, to VMH metabolite identifiers through the ```cobra_utils.py``` script and the included exhaustive list of VMH metabolites and their respective alternative identifiers in ```all_vmh_metabolites.tsv```. The usage of the VMH metabolite identifier database enables several metabolite matching strategies, such as through InChIString, InChIKey, CID, and isomeric SMILES (only used as a last resort due to the possibility of stereoisomers), found under the ```~/data_dependencies/``` directory. As a fallback strategy, a manually curated mapping file is also provided as ```manually_matched_keys.txt```, which enables the usage of the mapping function in the absence of internet access in addition to providing a more comprehensive mapping of GC-MS names to VMH identifiers; an additional strategy we use in such scenarios is the usage of BIGG identifiers in-place of VMH identifiers that are built-in to the model metabolites; this strategy is justified by the common usage of BIGG identifiers as VMH identifiers in the [mgPipe.m pipeline of the Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html) by [Heinken et al. (2022)](https://academic.oup.com/bioinformatics/article/38/8/2367/6528309).
+An additional feature available in MMTpy is the ability to match metabolite names from GC-MS (or alternative instrument) quantified and annotated output metabolite names, which can include common names or any other non-standard biochemical nomenclature, to VMH metabolite identifiers through the ```cobra_utils.py``` script and the included exhaustive list of VMH metabolites and their respective alternative identifiers in ```all_vmh_metabolites.tsv```. The usage of the VMH metabolite identifier database enables several metabolite matching strategies, such as through InChIString, InChIKey, CID, and isomeric SMILES (only used as a last resort due to the possibility of stereoisomers), found under the ```~/data_dependencies/``` directory. As a fallback strategy, a manually curated mapping file is also provided as ```manually_matched_keys.txt```, which enables the usage of the mapping function in the absence of internet access in addition to providing a more comprehensive mapping of GC-MS names to VMH identifiers. The ```match_names_to_vmh``` function can be called within a Python console after importing ```cobra_utils.py```, as shown in the example below.
 
    ```python
    > from mmtpy_utils import *
-   > match_names_to_vmh(gcms_filepath="your_gcms_data_path.csv", output_filepath="your_desired_output_path") # matches any non-standard metabolite name to the VMH identifiers for subsequent analyses.
+   > match_names_to_vmh(model_input=model, mbx_filepath="example_data/metabolomics_data.csv", output_filepath="example_outputs")
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -154,19 +169,19 @@ An additional feature we offer from this project is the ability to match metabol
 
 - 'microbe_IEX_met[u]tr': 'microbe_met[c] <=> met[u]'
 - Reversible reaction
-- By default, has bounds of (-1000., 1000.).
+- By default, has bounds of (-1000., 1000.)
 
 #### Fecal transport reactions (i.e., "UFEt" reactions)
 
 - 'UFEt_met': 'met[u] --> met[fe]'
 - Irreversible reaction
-- By default, has bounds of (0., 1000000.).
+- By default, has bounds of (0., 1000000.)
 
 #### Fecal exchange reactions
 
 - 'EX_met[fe]': 'met[fe] <=>'
 - Reversible reaction
-- Has bounds of (-1000., 1000000.) according to the [Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html)* and bounds of (0., 1000000.) according to MMTpy conventions.
+- Has bounds of (-1000., 1000000.) according to the [Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html)* and bounds of (0., 1000000.) according to MMTpy conventions
 
   *Note: fecal exchange reactions for the "microbeBiomass" have bounds of (-10000., 1000000.) according to the [Microbiome Modeling Toolbox](https://opencobra.github.io/cobratoolbox/latest/modules/analysis/multiSpecies/microbiomeModelingToolbox/index.html) and is defaulted to (0., 1000000.) in MMTpy.
 
