@@ -122,7 +122,7 @@ Other convenient tools, such as ```set_default_bounds()``` for resetting the mod
 An additional feature available in MMTpy is the ability to match metabolite names from GC-MS (or alternative instrument) quantified and annotated output metabolite names, which can include common names or any other non-standard biochemical nomenclature, to VMH metabolite identifiers through the ```cobra_utils.py``` script and the included exhaustive list of VMH metabolites and their respective alternative identifiers in ```all_vmh_metabolites.tsv```. The usage of the VMH metabolite identifier database enables several metabolite matching strategies, such as through InChIString, InChIKey, CID, and isomeric SMILES (only used as a last resort due to the possibility of stereoisomers), found under the ```~/data_dependencies/``` directory. As a fallback strategy, a manually curated mapping file is also provided as ```manually_matched_keys.txt```, which enables the usage of the mapping function in the absence of internet access in addition to providing a more comprehensive mapping of GC-MS names to VMH identifiers. The ```match_names_to_vmh``` function can be called within a Python console after importing ```cobra_utils.py```, as shown in the example below.
 
    ```python
-   > from mmtpy_utils import *
+   > from mmtpy_utils import match_names_to_vmh
    > match_names_to_vmh(model_input=model, mbx_filepath="example_data/metabolomics_data.csv", output_filepath="example_outputs")
    ```
 

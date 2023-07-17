@@ -5,11 +5,8 @@
 Such arbitrarily curated data files include the following, all of which are multi-species models:
 
 - microbiota_model_diet_Case_1_18_month.json
-
 - microbiota_model_diet_Case_1_18_month.mat
-
 - microbiota_model_diet_Control_10_10_month.json
-
 - microbiota_model_diet_Control_10_10_month.mat
 
 ***The following data file is obtained from Virtual Metabolic Human (VMH), representing an average "European diet," and the values are in the units of flux in mmol/(human x day).***
