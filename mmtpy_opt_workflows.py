@@ -86,6 +86,7 @@ def optimize_model(
 
     # Add diet 1ba if desired
     if add_1ba:
+        print(f"\n[STARTED] Adding diet 1ba to {model.name}")
         for rxn in model.reactions:
             # TODO check if all related reactions are included
             if "Diet_" in rxn.id and rxn.lower_bound != 0:
@@ -96,6 +97,7 @@ def optimize_model(
                     or "tdchola" in rxn.id
                 ):
                     model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 0.0)
+                    print(f"\t{rxn.id}:\t{model.reactions.get_by_id(rxn.id).bounds}")
 
     #########################################################
     # Part 1: maximize the flux through all UFEt reactions
@@ -275,6 +277,7 @@ def optimize_model_mbx(
 
     # Add diet 1ba if desired
     if add_1ba:
+        print(f"\n[STARTED] Adding diet 1ba to {model.name}")
         for rxn in model.reactions:
             # TODO check if all related reactions are included
             if "Diet_" in rxn.id and rxn.lower_bound != 0:
@@ -285,6 +288,7 @@ def optimize_model_mbx(
                     or "tdchola" in rxn.id
                 ):
                     model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 0.0)
+                    print(f"\t{rxn.id}:\t{model.reactions.get_by_id(rxn.id).bounds}")
 
     # Fetch and test the constraint list
     mbx_constraints = fetch_mbx_constr_list(

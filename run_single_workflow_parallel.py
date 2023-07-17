@@ -21,7 +21,7 @@ def main(
     mbx_path: str,
     output_path: str,
     workflow: str,
-    add_1ba: bool = False,
+    add_1ba: bool,
 ):
     # Search through the model directory and find all the JSON and MATLAB files
     model_files = [f for f in os.listdir(model_path) if f.endswith(".json")]
@@ -82,4 +82,4 @@ def main(
 
 
 if __name__ == "__main__":
-    main(model_path, mbx_path, output_path, workflow)
+    main(model_path, mbx_path, output_path, workflow, add_1ba)

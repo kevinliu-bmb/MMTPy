@@ -13,7 +13,7 @@ output_path = "example_outputs"
 add_1ba = False
 
 
-def main(model_path: str, mbx_path: str, output_path: str, add_1ba: bool = False):
+def main(model_path: str, mbx_path: str, output_path: str, add_1ba: bool):
     # Search through the model directory and find all the JSON and MATLAB files
     model_files = [f for f in os.listdir(model_path) if f.endswith(".json")]
     model_files_mat = [f for f in os.listdir(model_path) if f.endswith(".mat")]
@@ -64,4 +64,4 @@ def main(model_path: str, mbx_path: str, output_path: str, add_1ba: bool = False
 
 
 if __name__ == "__main__":
-    main(model_path, mbx_path, output_path)
+    main(model_path, mbx_path, output_path, add_1ba)
