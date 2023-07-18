@@ -3,6 +3,7 @@ import re
 from math import isnan
 
 import cobra
+import numpy as np
 import pandas as pd
 import pubchempy as pcp
 
@@ -310,6 +311,31 @@ def convert_string(s: str) -> str:
     return s
 
 
+def get_init_mbx_idx(df: pd.DataFrame) -> int:
+    """
+    Get the index of the first numerical column in a dataframe.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Dataframe to be searched.
+
+    Raises
+    ------
+    ValueError
+        If no numerical columns are found.
+
+    Returns
+    -------
+    int
+        Index of the first numerical column.
+    """
+    for index, (col, dtype) in enumerate(df.dtypes.items()):
+        if np.issubdtype(dtype, np.number):
+            return index
+    raise ValueError("No numerical columns found.")
+
+
 def match_names_to_vmh(
     model_input: str or cobra.Model,
     mbx_filepath: str,
@@ -375,9 +401,14 @@ def match_names_to_vmh(
     print(
         "\n\t[1/3] Direct matching of MBX names to VMH identifiers using the VMH database"
     )
+
+    # Get the index of the first numerical column in mbx_data_df
+    first_mbx_idx = get_init_mbx_idx(mbx_data_df)
+
     # Create dictionaries for direct matching
     mbx_names_dict = {
-        name: convert_string(name).lower() for name in mbx_data_df.columns[2:].to_list()
+        name: convert_string(name).lower()
+        for name in mbx_data_df.columns[first_mbx_idx:].to_list()
     }
     vmh_names_dict = dict(zip(vmh_db_df["fullName"].index, vmh_db_df["fullName"]))
 
