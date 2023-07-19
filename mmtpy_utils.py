@@ -528,7 +528,7 @@ def match_names_to_vmh(
     # Write out the matched identifiers to a .txt file
     with open(key_output_filepath, "w") as f:
         for key, value in max_matched_dict.items():
-            f.write(f"{key}\t{value}\n")
+            f.write(f"{key}:\t{value}\n")
     print(
         f"\t\t{len(max_matched_dict)} of {len(mbx_data_df.columns)-2} VMH identifiers matched to the MBX metabolite names"
     )
@@ -628,7 +628,7 @@ def fetch_norm_sample_mbx_data(
     ) as f:
         matches = f.readlines()
         if matches != "":
-            matches = [match.strip().split("\t") for match in matches]
+            matches = [match.strip().split(":\t") for match in matches]
             for match in matches:
                 matched_mbx_names[match[0]] = match[1]
 
