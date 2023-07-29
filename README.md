@@ -235,7 +235,7 @@ Project Link: [https://github.com/kevinliu-bmb/MMTpy](https://github.com/kevinli
 
 MMTpy was created based on the Microbiome Modeling Toolbox by [Almut Heinken](https://scholar.google.com/citations?user=4Lu-c34AAAAJ&hl=en&oi=ao) and [Ines Thiele](https://orcid.org/0000-0002-8071-7110).
 
-The tools here were conceptualized by [Ali R. Zomorrodi, PhD.](https://orcid.org/0000-0002-9134-8082), and its elementary implementation was done by [Izzy Goodchild-Michelman](https://www.linkedin.com/in/isabella-goodchild-michelman-921bab196).
+The tools here were conceptualized by [Ali R. Zomorrodi, PhD.](https://orcid.org/0000-0002-9134-8082), and its elementary implementation was done by [Isabella Goodchild-Michelman](https://www.linkedin.com/in/isabella-goodchild-michelman-921bab196).
 
 MMTpy was developed by [Kevin Liu](https://dbmi.hms.harvard.edu/people/kevin-liu) within the [Zomorrodi lab](https://zomorrodi.mgh.harvard.edu/) at Massachusetts General Hospital under the mentorship of the Principal Investigator, [Ali R. Zomorrodi, PhD](https://orcid.org/0000-0002-9134-8082).
 

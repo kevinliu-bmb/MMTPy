@@ -22,3 +22,9 @@ The following file was obtained from VMH on June 2, 2023, and the current defini
 - metabolomics_data.csv
 
 (citation: Leonard MM, Valitutti F, Karathia H, et al. Microbiome signatures of progression toward celiac disease onset in at-risk children in a longitudinal prospective cohort study. Proc Natl Acad Sci U S A. 2021;118(29):e2020322118. doi:10.1073/pnas.2020322118)
+
+***An example strain-level taxonomic abundance table is provided based on the Microbiome Modeling Toolbox by Heinken et al. (2022) for the creation of personalized multi-species models***
+
+- normCoverageReduced.csv
+
+(citation: Heinken A, Thiele I. Microbiome Modelling Toolbox 2.0: efficient, tractable modelling of microbiome communities. Bioinformatics. 2022;38(8):2367-2368. doi:10.1093/bioinformatics/btac082)
