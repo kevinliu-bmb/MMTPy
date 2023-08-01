@@ -1,9 +1,12 @@
+import os
+
 import cobra
 
 from mmtpy_utils import (
     fetch_mbx_constr_list,
     fetch_norm_sample_mbx_data,
     load_model,
+    match_names_to_vmh,
     print_logo,
     set_default_bounds,
     solve_mbx_constraints,
@@ -105,10 +108,11 @@ def optimize_model(
         print(f"\n[STARTED] Part 1: maximizing FEX fluxes for {model.name}")
 
     # Fetch all FEX reactions and store them in a list
-    FEX_rxn_list = []
-    for rxn in model.reactions:
-        if rxn.id.startswith("EX_") and rxn.id.endswith("[fe]"):
-            FEX_rxn_list.append(rxn.id)
+    FEX_rxn_list = [
+        rxn.id
+        for rxn in model.reactions
+        if rxn.id.startswith("EX_") and rxn.id.endswith("[fe]")
+    ]
 
     # Maximize the flux through all FEX reactions
     counter = 0
@@ -200,6 +204,7 @@ def optimize_model(
 def optimize_model_mbx(
     model_input: str,
     mbx_path: str,
+    mbx_matched_keys_input: str or dict,
     output_path: str,
     add_1ba: bool = False,
     silent: bool = False,
@@ -216,6 +221,8 @@ def optimize_model_mbx(
         Path to the model file or a COBRApy model object.
     mbx_path : str
         Path to the metabolomics data file.
+    mbx_matched_keys_input : str or dict
+        Dictionary of the matched metabolomics names to the model metabolite or path to the matched file.
     output_path : str
         Path to the output directory.
     add_1ba : bool, optional
@@ -239,6 +246,10 @@ def optimize_model_mbx(
     ------
     ValueError
         If the model_input is not a path to a model or a COBRApy model object.
+    ValueError
+        If the mbx_matched_keys_input is not a path to a matched file or a dictionary of the matched metabolomics names to the model metabolite.
+    ValueError
+        If the VMH Identifier name-matching dictionary is empty.
     """
     # Print the logo
     if not parallel:
@@ -263,12 +274,39 @@ def optimize_model_mbx(
     # Set the solver interface
     model.solver = "gurobi"
 
+    if isinstance(mbx_matched_keys_input, str):
+        # If the input path does not exist, perform the matching; otherwise, load the dictionary
+        if not os.path.exists(mbx_matched_keys_input):
+            mbx_output_path = f"{output_path}/vmh_mbx_matched_keys.txt"
+            mbx_matched_keys_dict = match_names_to_vmh(
+                mbx_filepath=mbx_path,
+                output_filepath=mbx_output_path,
+                reuturn_matched_keys=True,
+                silent=silent,
+            )
+        elif os.path.exists(mbx_matched_keys_input):
+            mbx_matched_keys_dict = dict()
+            with open(mbx_matched_keys_input, "r") as f:
+                for line in f:
+                    mbx_matched_keys_dict[line.split(":\t")[0]] = line.split(":\t")[
+                        1
+                    ].strip("\n")
+    elif isinstance(mbx_matched_keys_input, dict):
+        if len(mbx_matched_keys_input) == 0:
+            raise ValueError(
+                "The VMH Identifier name-matching dictionary must not be empty."
+            )
+        mbx_matched_keys_dict = mbx_matched_keys_input
+    else:
+        raise ValueError(
+            "The mbx_matched_keys_input must be a path to a matched file or a dictionary of the matched metabolomics names to the model metabolite."
+        )
+
     # Get the model-specific metabolomics data
     mbx_metab_norm_dict = fetch_norm_sample_mbx_data(
         model_input=model,
         mbx_filepath=mbx_path,
-        match_key_output_filepath=output_path,
-        silent=silent,
+        matched_mbx_names=mbx_matched_keys_dict,
     )
 
     # Set all fecal exchange reaction lower bounds to zero
@@ -295,7 +333,7 @@ def optimize_model_mbx(
     )
 
     # Fetch the slack constraints if needed
-    mbx_constr = solve_mbx_constraints(
+    mbx_constr, constr_details = solve_mbx_constraints(
         model=model, constraints=mbx_constraints, parallel=parallel
     )
 
@@ -340,6 +378,9 @@ def optimize_model_mbx(
         max_opt_solutions[rxn_id] = solution.objective_value
 
     # Save the results
+    with open(f"{output_path}/{model.name}_slack_var_log.txt", "w") as f:
+        for line in constr_details:
+            f.write(f"{line}\n")
     with open(f"{output_path}/{model.name}_min_mbx_opt_flux.txt", "w") as f:
         for rxn_id in min_opt_solutions:
             f.write(f"{rxn_id}:\t{min_opt_solutions[rxn_id]}\n")

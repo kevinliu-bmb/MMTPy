@@ -2,18 +2,26 @@ import concurrent.futures
 import os
 
 from mmtpy_opt_workflows import optimize_model, optimize_model_mbx
-from mmtpy_utils import convert_model_format
+from mmtpy_utils import convert_model_format, match_names_to_vmh
 
 # Define paths
 model_path = "example_data/models"
 mbx_path = "example_data/metabolomics_data_assert_non_large_value.csv"
 output_path = "example_outputs"
+mbx_matched_keys_input = "example_outputs/metabolomics_data_matched_key.txt"
+
 
 # Add 1BA to the model
 add_1ba = False
 
 
-def main(model_path: str, mbx_path: str, output_path: str, add_1ba: bool):
+def main(
+    model_path: str,
+    mbx_path: str,
+    mbx_matched_keys_input: str,
+    output_path: str,
+    add_1ba: bool,
+) -> None:
     # Search through the model directory and find all the JSON and MATLAB files
     model_files = [f for f in os.listdir(model_path) if f.endswith(".json")]
     model_files_mat = [f for f in os.listdir(model_path) if f.endswith(".mat")]
@@ -28,6 +36,16 @@ def main(model_path: str, mbx_path: str, output_path: str, add_1ba: bool):
     model_files = [f for f in os.listdir(model_path) if f.endswith(".json")]
 
     for model_file in model_files:
+        # If the matched keys file does not exist, use the match_names_to_vmh function
+        if isinstance(mbx_matched_keys_input, str) and not os.path.exists(
+            mbx_matched_keys_input
+        ):
+            mbx_matched_keys_input = match_names_to_vmh(
+                mbx_filepath=mbx_path,
+                output_filepath=output_path,
+                reuturn_matched_keys=True,
+            )
+
         # Arguments for the functions
         args_optimize_model = [
             f"{model_path}/{model_file}",
@@ -40,6 +58,7 @@ def main(model_path: str, mbx_path: str, output_path: str, add_1ba: bool):
         args_optimize_model_mbx = [
             f"{model_path}/{model_file}",
             mbx_path,
+            mbx_matched_keys_input,
             output_path,
             add_1ba,
             True,
@@ -64,4 +83,4 @@ def main(model_path: str, mbx_path: str, output_path: str, add_1ba: bool):
 
 
 if __name__ == "__main__":
-    main(model_path, mbx_path, output_path, add_1ba)
+    main(model_path, mbx_path, mbx_matched_keys_input, output_path, add_1ba)

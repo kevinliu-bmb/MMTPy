@@ -1,6 +1,7 @@
 import os
 import re
 from math import isnan
+import time
 
 import cobra
 import numpy as np
@@ -337,13 +338,13 @@ def get_init_mbx_idx(df: pd.DataFrame) -> int:
 
 
 def match_names_to_vmh(
-    model_input: str or cobra.Model,
     mbx_filepath: str,
     output_filepath: str,
+    reuturn_matched_keys: bool,
     vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
     manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
     silent: bool = False,
-) -> None:
+) -> dict:
     """
     Map the metabolite names detected by MBX to VMH identifiers for a given
     MBX dataset. The matching is performed in the following order:
@@ -353,12 +354,12 @@ def match_names_to_vmh(
 
     Parameters
     ----------
-    model_input : str or cobra.Model
-        Path to the model file or a COBRApy model loaded into memory.
     mbx_filepath : str
         Filepath to the MBX data.
     output_filepath : str
         Filepath (including .txt file name) for saving the matching keys.
+    reuturn_matched_keys : bool
+        Whether to return the matched keys as a dictionary.
     vmh_db_filepath : str
         Filepath to the VMH database of metabolites and their identifiers.
     manual_matching_filepath : str
@@ -373,7 +374,8 @@ def match_names_to_vmh(
 
     Returns
     -------
-    None
+    dict
+        Dictionary of matched keys.
 
     Notes
     -----
@@ -385,14 +387,6 @@ def match_names_to_vmh(
     """
 
     # Load the data
-    if isinstance(model_input, str):
-        model = load_model(model_path=model_input, simple_model_name=True)
-    elif isinstance(model_input, cobra.Model):
-        model = model_input
-    else:
-        raise ValueError(
-            f"model_path must be a string or a COBRApy model, not {type(model_input)}"
-        )
     vmh_db_df = pd.read_csv(vmh_db_filepath, index_col=0, header=0, delimiter="\t")
     mbx_data_df = pd.read_csv(mbx_filepath, index_col=0, header=0)
 
@@ -463,6 +457,7 @@ def match_names_to_vmh(
                     smiles_names_dict[mbx_name] = c[0].isomeric_smiles
         except Exception as e:
             print(f"\t\tError getting info for '{compound}': {e}")
+        time.sleep(0.5)
 
     pubchempy_matched_dict = dict()
 
@@ -523,7 +518,9 @@ def match_names_to_vmh(
     if output_filepath[-1] != "/":
         output_filepath += "/"
 
-    key_output_filepath = f"{output_filepath}{model.name}_{mbx_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt"
+    key_output_filepath = (
+        f"{output_filepath}{mbx_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt"
+    )
 
     # Write out the matched identifiers to a .txt file
     with open(key_output_filepath, "w") as f:
@@ -537,15 +534,14 @@ def match_names_to_vmh(
         f"\n\t[Matched MBX names to VMH identifiers and written to '{key_output_filepath}']"
     )
 
+    if reuturn_matched_keys:
+        return max_matched_dict
+
 
 def fetch_norm_sample_mbx_data(
     model_input: cobra.Model or str,
     mbx_filepath: str,
-    match_key_output_filepath: str,
-    use_existing_matched_keys: bool = False,
-    existing_keys_path: str = None,
-    manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
-    silent: bool = False,
+    matched_mbx_names: dict,
 ) -> dict:
     """
     Generate a dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
@@ -556,16 +552,8 @@ def fetch_norm_sample_mbx_data(
         The COBRApy model loaded into memory or a file path to the model
     mbx_filepath : str
         Filepath to the MBX data.
-    match_key_output_filepath : str
-        Filepath to the directory where the matched key file will be saved. If the path is not supplied, the output will be saved in the working directory by default.
-    use_existing_matched_keys : bool
-        Whether to use existing matched keys from match_names_to_vmh().
-    existing_keys_path : str (optional)
-        If use_existing_matched_keys is true, load the keys; defaults to None.
-    manual_matching_filepath : str (optional)
-        Filepath to the manually matched key file; defaults to the work directory if a path is not supplied by the user.
-    silent : bool
-        Whether to print out the progress of the VMH name matching function; defaults to False.
+    match_key_input : dict
+        Dictionary of matched vmh_id and metabolite name keys.
 
     Returns
     -------
@@ -580,6 +568,8 @@ def fetch_norm_sample_mbx_data(
         If the model has multiple or no metabolomics data attributes.
     ValueError
         If the model mbx data values are not numeric after setting to float.
+    ValueError
+        If the matched_mbx_names dictionary is empty.
     """
     if isinstance(model_input, str):
         model = load_model(model_input)
@@ -594,43 +584,6 @@ def fetch_norm_sample_mbx_data(
 
     # Read metabolomics data
     mbx_data = pd.read_csv(mbx_filepath, sep=",", index_col=0)
-
-    if use_existing_matched_keys:
-        if match_key_output_filepath == None:
-            match_key_output_filepath = os.getcwd()
-            print(
-                f"\tWarning: output path is not supplied; matched key file will be stored under the work directory: {match_key_output_filepath}"
-            )
-        else:
-            match_key_output_filepath = existing_keys_path
-    else:
-        if match_key_output_filepath == None:
-            match_key_output_filepath = os.getcwd()
-            print(
-                f"\tWarning: output path is not supplied; matched key file will be stored under the work directory: {match_key_output_filepath}"
-            )
-
-        if match_key_output_filepath[-1] != "/":
-            match_key_output_filepath += "/"
-
-        match_names_to_vmh(
-            model_input=model,
-            mbx_filepath=mbx_filepath,
-            output_filepath=match_key_output_filepath,
-            manual_matching_filepath=manual_matching_filepath,
-            silent=silent,
-        )
-
-    matched_mbx_names = dict()
-    with open(
-        f"{match_key_output_filepath}{model.name}_{mbx_filepath.split('/')[-1].split('.')[-2]}_matched_key.txt",
-        "r",
-    ) as f:
-        matches = f.readlines()
-        if matches != "":
-            matches = [match.strip().split(":\t") for match in matches]
-            for match in matches:
-                matched_mbx_names[match[0]] = match[1]
 
     idx_list = []
     # Given the matched metabolite names, find the index where the metabolite is found in the MBX data
@@ -665,6 +618,10 @@ def fetch_norm_sample_mbx_data(
     # Check if all values in metab_raw_vals_dict are floats
     if not all(isinstance(v, float) for v in metab_raw_vals_dict.values()):
         raise ValueError("Not all values in metab_raw_vals_dict are floats.")
+
+    # Raise ValueError if matched_mbx_names is empty
+    if len(matched_mbx_names) == 0:
+        raise ValueError("The VMH Identifier name-matching dictionary is empty.")
 
     # Create a dictionary of VMH IDs and their corresponding metabolite values if the metabolite is in the model
     vmh_id_values = dict()
@@ -703,6 +660,11 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
     -------
     list
         A list of the constraints added to the model.
+
+    Raises
+    ------
+    ValueError
+        If no constraints were added to the model.
     """
     print(f"\n[Fetching MBX constraints for {model.name}]")
     # Calculate the constraint for each metabolite's fecal exchange reactions
@@ -725,6 +687,9 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
             constr_expr, lb=0, ub=0, name=ex_rxn_id + "_constraint"
         )
         constraint_list.append(constraint)
+
+    if len(constraint_list) == 0:
+        raise ValueError("No constraints were added to the model.")
 
     print(
         f"\n\tAdding {len(constraint_list)} computed MBX constraints to {model.name} and testing if the solution is feasible"
@@ -770,6 +735,8 @@ def solve_mbx_constraints(
     -------
     list
         A list of the constraints added to the model.
+    list
+        A list of the slack variables added to the model.
     """
     slack_constraints = []
     slack_variables = []
@@ -849,6 +816,7 @@ def solve_mbx_constraints(
 
     # Adjust constraints based on slack variable values
     refined_constraints = []
+    constraint_details_log = []
     if not parallel:
         print("\n\tSolved constraint details:")
     for constraint in slack_constraints:
@@ -857,28 +825,28 @@ def solve_mbx_constraints(
             constraint.lb = 0
             constraint.ub = None
             refined_constraints.append(constraint)
+            constraint_details = f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux greater than constrained value]"
+            constraint_details_log.append(constraint_details)
             if not parallel:
-                print(
-                    f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux greater than constrained value]"
-                )
+                print(constraint_details)
         elif constraint.name in intersection_lt:
             # Adjust constraint to v_EX_fecal_metab_i < x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
             constraint.lb = None
             constraint.ub = 0
             refined_constraints.append(constraint)
+            constraint_details = f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux less than constrained value]"
+            constraint_details_log.append(constraint_details)
             if not parallel:
-                print(
-                    f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Slacked, flux less than constrained value]"
-                )
+                print(constraint_details)
         elif constraint.name in intersection_eq:
             # Adjust constraint to v_EX_fecal_metab_i = x * summation_j_in_set_MBX_data(v_EX_fecal_metab_j)
             constraint.lb = 0
             constraint.ub = 0
             refined_constraints.append(constraint)
+            constraint_details = f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Original, flux equal to constrained value]"
+            constraint_details_log.append(constraint_details)
             if not parallel:
-                print(
-                    f"\t\t{constraint.name}:\t({constraint.lb}, {constraint.ub}),\t[Original, flux equal to constrained value]"
-                )
+                print(constraint_details)
 
     # Remove the slack variables and constraints from the model
     model.remove_cons_vars(slack_variables)
@@ -887,4 +855,4 @@ def solve_mbx_constraints(
 
     print(f"\n[Returning solved constraints]")
 
-    return refined_constraints
+    return refined_constraints, constraint_details_log
