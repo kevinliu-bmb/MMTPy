@@ -123,7 +123,7 @@ An additional feature available in MMTpy is the ability to match metabolite name
 
    ```python
    > from mmtpy_utils import match_names_to_vmh
-   > match_names_to_vmh(model_input=model, mbx_filepath="example_data/metabolomics_data.csv", output_filepath="example_outputs")
+   > match_names_to_vmh(mbx_filepath="example_data/metabolomics_data.csv", output_filepath="example_outputs", reuturn_matched_keys = False)
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
