@@ -9,6 +9,7 @@ from mmtpy_utils import (
     match_names_to_vmh,
     print_logo,
     set_default_bounds,
+    set_ba_diet_bounds,
     solve_mbx_constraints,
 )
 
@@ -69,7 +70,7 @@ def optimize_model(
         print_logo(
             tool="optimize_model",
             tool_description="Optimize a model by minimizing the flux through IEX reactions constrained by\nmaximized FEX fluxes.",
-            version="0.1.1",
+            version="0.1.2",
         )
     else:
         print(f"\n[STARTED] 'optimize_model' workflow for {model_input}")
@@ -85,61 +86,83 @@ def optimize_model(
         )
 
     # Set the default bounds
-    set_default_bounds(model, rxn_type="FEX", silent=silent)
+    set_default_bounds(model, source="MMTpy", rxn_type="FEX", silent=silent)
 
     # Add diet 1ba if desired
     if add_1ba:
-        print(f"\n[STARTED] Adding diet 1ba to {model.name}")
-        for rxn in model.reactions:
-            if "Diet_" in rxn.id and rxn.lower_bound != 0:
-                if (
-                    "dgchol" in rxn.id
-                    or "gchola" in rxn.id
-                    or "tchola" in rxn.id
-                    or "tdchola" in rxn.id
-                ):
-                    model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 0.0)
-                    print(f"\t{rxn.id}:\t{model.reactions.get_by_id(rxn.id).bounds}")
+        set_ba_diet_bounds(model, silent=silent)
+        # print(f"\n[STARTED] Adding diet 1ba to {model.name}")
+        # for rxn in model.reactions:
+        #     if "Diet_" in rxn.id and rxn.lower_bound != 0:
+        #         if (
+        #             "dgchol" in rxn.id
+        #             or "gchola" in rxn.id
+        #             or "tchola" in rxn.id
+        #             or "tdchola" in rxn.id
+        #         ):
+        #             model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 0.0)
+        #             print(f"\t{rxn.id}:\t{model.reactions.get_by_id(rxn.id).bounds}")
 
     #########################################################
     # Part 1: maximize the flux through all FEX reactions
     #########################################################
-    if not parallel:
-        print(f"\n[STARTED] Part 1: maximizing FEX fluxes for {model.name}")
+    # Check the output path for existing FEX flux files, and if they exist, skip part 1
+    FEX_flux_exists = False
+    if os.path.exists(f"{output_path}/{model.name}_opt_FEX_flux.txt"):
+        FEX_flux_exists = True
+        maximized_FEX_flux_dict = dict()
 
-    # Fetch all FEX reactions and store them in a list
-    FEX_rxn_list = [
-        rxn.id
-        for rxn in model.reactions
-        if rxn.id.startswith("EX_") and rxn.id.endswith("[fe]")
-    ]
+        # Read the existing maximized FEX fluxes
+        with open(f"{output_path}/{model.name}_opt_FEX_flux.txt", "r") as f:
+            for line in f:
+                rxn_id = line.split(":\t")[0]
+                flux = float(line.split(":\t")[1].strip("\n"))
+                maximized_FEX_flux_dict[rxn_id] = flux
 
-    # Maximize the flux through all FEX reactions
-    counter = 0
-    counter_max = len(FEX_rxn_list)
-    maximized_FEX_flux_list = []
-    for rxn in FEX_rxn_list:
-        counter += 1
+        FEX_rxn_list = list(maximized_FEX_flux_dict.keys())
+        maximized_FEX_flux_list = list(maximized_FEX_flux_dict.values())
+
+        print(
+            f"\n[SKIPPED] Part 1: found existing maximized FEX fluxes for {model.name}"
+        )
+
+    if not FEX_flux_exists:
         if not parallel:
-            print(
-                f"\n\tMaximizing FEX reaction {str(counter)} of {str(counter_max)} for {model.name}"
-            )
-        model.objective = rxn
-        solution = model.optimize()
-        maximized_FEX_flux_list.append(solution.objective_value)
+            print(f"\n[STARTED] Part 1: maximizing FEX fluxes for {model.name}")
+
+        # Fetch all FEX reactions and store them in a list
+        FEX_rxn_list = [
+            rxn.id
+            for rxn in model.reactions
+            if rxn.id.startswith("EX_") and rxn.id.endswith("[fe]")
+        ]
+
+        # Maximize the flux through all FEX reactions
+        counter = 0
+        counter_max = len(FEX_rxn_list)
+        maximized_FEX_flux_list = []
+        for rxn in FEX_rxn_list:
+            counter += 1
+            if not parallel:
+                print(
+                    f"\n\tMaximizing FEX reaction {str(counter)} of {str(counter_max)} for {model.name}"
+                )
+            model.objective = rxn
+            solution = model.optimize()
+            maximized_FEX_flux_list.append(solution.objective_value)
+            if not parallel:
+                print(f"\t\t{rxn}:\t{solution.objective_value}")
+
+        # Create a dictionary of the maximized FEX fluxes
+        maximized_FEX_flux_dict = dict(zip(FEX_rxn_list, maximized_FEX_flux_list))
+
         if not parallel:
-            print(f"\t\t{rxn}:\t{solution.objective_value}")
+            print(f"\n[DONE] Part 1: maximization complete for {model.name}")
 
-    # Create a dictionary of the maximized FEX fluxes
-    maximized_FEX_flux_dict = dict(zip(FEX_rxn_list, maximized_FEX_flux_list))
-
+    #########################################################
+    # Part 2: minimize the flux through all IEX reactions
+    #########################################################
     if not parallel:
-        print(f"\n[DONE] Part 1: maximization complete for {model.name}")
-
-        #########################################################
-        # Part 2: minimize the flux through all IEX reactions
-        #########################################################
-
         print(f"\n[STARTED] Part 2: minimizing IEX fluxes for {model.name}")
 
     # Constrain the FEX reactions by the maximized FEX fluxes and minimize the
@@ -180,17 +203,24 @@ def optimize_model(
             model.reactions.get_by_id(FEX_rxn_list[i]).bounds = saved_bounds
         else:
             if not parallel:
-                print("\t\tSkipping reaction because the maximized flux is 0.0")
+                print(
+                    f"\t\tSkipping the reaction '{FEX_rxn_list[i]}' because the maximized flux is 0.0"
+                )
 
     # Create a dictionary of the minimized IEX fluxes
     model_rxn_bounds_dict = dict()
     for rxn in model.reactions:
         model_rxn_bounds_dict[rxn.id] = rxn.bounds
 
-    # Write the minimized IEX fluxes to a file
+    # Write the maximized FEX fluxes and minimized IEX fluxes to files
     with open(f"{output_path}/{model.name}_opt_flux.txt", "w") as f:
         for rxn_id in minimized_IEX_flux_dict:
             f.write(f"{rxn_id}:\t{minimized_IEX_flux_dict[rxn_id]}\n")
+
+    if not FEX_flux_exists:
+        with open(f"{output_path}/{model.name}_opt_FEX_flux.txt", "w") as f:
+            for rxn_id in maximized_FEX_flux_dict.keys():
+                f.write(f"{rxn_id}:\t{maximized_FEX_flux_dict[rxn_id]}\n")
 
     if not parallel:
         print(f"\n[DONE] Part 2: minimization complete for {model.name}")
@@ -256,7 +286,7 @@ def optimize_model_mbx(
         print_logo(
             tool="optimize_model_mbx",
             tool_description="Optimize a model for each metabolite given the MBX data.",
-            version="0.1.1",
+            version="0.1.2",
         )
     else:
         print(f"\n[STARTED] 'optimize_model_mbx' workflow for {model_input}")
@@ -314,18 +344,18 @@ def optimize_model_mbx(
 
     # Add diet 1ba if desired
     if add_1ba:
-        print(f"\n[STARTED] Adding diet 1ba to {model.name}")
-        for rxn in model.reactions:
-            # TODO check if all related reactions are included
-            if "Diet_" in rxn.id and rxn.lower_bound != 0:
-                if (
-                    "dgchol" in rxn.id
-                    or "gchola" in rxn.id
-                    or "tchola" in rxn.id
-                    or "tdchola" in rxn.id
-                ):
-                    model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 0.0)
-                    print(f"\t{rxn.id}:\t{model.reactions.get_by_id(rxn.id).bounds}")
+        set_ba_diet_bounds(model, silent=silent)
+        # print(f"\n[STARTED] Adding diet 1ba to {model.name}")
+        # for rxn in model.reactions:
+        #     if "Diet_" in rxn.id and rxn.lower_bound != 0:
+        #         if (
+        #             "dgchol" in rxn.id
+        #             or "gchola" in rxn.id
+        #             or "tchola" in rxn.id
+        #             or "tdchola" in rxn.id
+        #         ):
+        #             model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 0.0)
+        #             print(f"\t{rxn.id}:\t{model.reactions.get_by_id(rxn.id).bounds}")
 
     # Fetch and test the constraint list
     mbx_constraints = fetch_mbx_constr_list(

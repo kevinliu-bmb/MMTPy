@@ -1,7 +1,8 @@
 import os
 import re
-from math import isnan
+import sys
 import time
+from math import isnan
 
 import cobra
 import numpy as np
@@ -222,6 +223,81 @@ def set_default_bounds(
         )
 
     return bounds_changed
+
+
+def set_ba_diet_bounds(
+    model: cobra.Model,
+    diet_filepath: str = "data_dependencies/Heinken_2019_BA_diet.csv",
+    silent: bool = False,
+) -> None:
+    """
+    Relaxes diet bounds according to Heinken et al. (2019) BA diet and tests model feasibility.
+    Bounds are changed either if the BA diet lower bound is less than or equal to the model lower bound.
+
+    Parameters
+    ----------
+    model : cobra.Model
+        Model to be modified.
+    diet_filepath : str, optional
+        Path to csv file containing BA diet bounds. The default is "data_dependencies/Heinken_2019_BA_diet.csv".
+    silent : bool, optional
+        If True, no changes are printed. The default is False.
+
+    Returns
+    -------
+    None
+    """
+    ba_diet_df = pd.read_csv(diet_filepath, skiprows=1)
+
+    ba_diet_df["Reaction"] = ba_diet_df["Reaction"].str.replace("(e)", "", regex=False)
+
+    ba_diet_df["Upper bound"] = ba_diet_df["Upper bound"].replace(1000.0, 10000.0)
+
+    ba_diet_dict = {
+        f"Diet_{ba_diet_df['Reaction'][i]}[d]": (
+            ba_diet_df["Lower bound"][i],
+            ba_diet_df["Upper bound"][i],
+        )
+        for i in range(len(ba_diet_df))
+        if "EX_biomass[c]" not in ba_diet_df["Reaction"][i]
+    }
+
+    print(
+        "\n[1/2] Changing select diet bounds according to Heinken et al. (2019) BA diet"
+    )
+    for diet_rxn, diet_bounds in ba_diet_dict.items():
+        rxn_bounds = [
+            (-0.1, 10000.0),
+            (0.0, 10000.0),
+            (-1000.0, 10000.0),
+            (-50.0, 10000.0),
+        ]
+        if diet_rxn in model.reactions:
+            if (
+                diet_bounds in rxn_bounds
+                and diet_bounds != model.reactions.get_by_id(diet_rxn).bounds
+                and diet_bounds[0] <= model.reactions.get_by_id(diet_rxn).lower_bound
+            ):
+                if not silent:
+                    print(
+                        f"\t{diet_rxn}:\t bounds changed from {model.reactions.get_by_id(diet_rxn).bounds} to {ba_diet_dict[diet_rxn]}"
+                    )
+                model.reactions.get_by_id(diet_rxn).bounds = ba_diet_dict[diet_rxn]
+        elif diet_rxn not in model.reactions:
+            print(f"\tWarning: {diet_rxn}:\treaction not in model")
+        else:
+            print(f"\tWarning: {diet_rxn}:\tbounds not changed")
+
+    print("\n[2/2] Testing model feasibility with BA diet")
+    model.objective = 0
+    ba_diet_sol = model.optimize()
+    if ba_diet_sol.status == "optimal":
+        print(
+            "\tModel is feasible with relaxed BA diet, proceeding with remaining steps"
+        )
+    else:
+        print("\tModel is infeasible with relaxed BA diet, terminating workflow")
+        sys.exit()
 
 
 def convert_model_format(
