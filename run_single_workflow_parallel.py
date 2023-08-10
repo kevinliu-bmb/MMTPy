@@ -11,7 +11,7 @@ output_path = "example_outputs"
 mbx_matched_keys_input = "example_outputs/metabolomics_data_matched_key.txt"
 
 # Add 1BA to the model
-add_1ba = True
+add_1ba = False
 
 # Select workflow (either "optimize_model" or "optimize_model_mbx")
 workflow = "optimize_model_mbx"
