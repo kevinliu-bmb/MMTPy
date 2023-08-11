@@ -292,7 +292,7 @@ def set_ba_diet_bounds(
             "\tModel is feasible with relaxed BA diet, proceeding with remaining steps"
         )
     else:
-        print("\tModel is infeasible with relaxed BA diet, terminating workflow")
+        print("\tWarning: Model is infeasible with relaxed BA diet, terminating workflow")
         sys.exit()
 
 
