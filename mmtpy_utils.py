@@ -106,10 +106,8 @@ def set_default_bounds(
 ) -> bool:
     """
     Set the bounds of the model's reactions according to conventions;
-    prints the changes and returns True if the bounds were different from the
-    default state.
-    Conventional bounds can either be set based on Heinken et al. (2022), mgPipe
-    models or be set based on MMTpy conventions.
+    prints the changes and returns True if the bounds were different from the default state.
+    Conventional bounds can either be set based on Heinken et al. (2022), mgPipe models or be set based on MMTpy conventions.
 
     Parameters
     ----------

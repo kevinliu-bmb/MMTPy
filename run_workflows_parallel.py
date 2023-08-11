@@ -12,7 +12,7 @@ mbx_matched_keys_input = "example_outputs/metabolomics_data_matched_key.txt"
 
 
 # Add 1BA to the model
-add_1ba = False
+add_1ba = True
 
 
 def main(
