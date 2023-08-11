@@ -114,8 +114,7 @@ def set_default_bounds(
     model : cobra.Model
         The model whose reactions' bounds are to be set.
     source : str, optional
-        The definition of conventional bounds, by default "MMTpy"; options are of
-        either "MMTpy" or "MATLAB".
+        The definition of conventional bounds, by default "MMTpy"; options are of either "MMTpy" or "MATLAB".
     rxn_type : str, optional
         The type of reactions whose bounds are to be set, by default "all";
         options are of either "all", "FEX", "UFEt", "IEX", "DUt", or "commBiomass".
