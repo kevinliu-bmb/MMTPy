@@ -45,8 +45,7 @@ def print_logo(tool: str, tool_description: str, version: str) -> None:
 
 def load_model(model_path: str, simple_model_name: bool = True) -> cobra.Model:
     """
-    Load a multi-species model into memory given a path to a model file in a
-    COBRApy supported format.
+    Load a multi-species model into memory given a path to a model file in a COBRApy supported format.
 
     Parameters
     ----------
