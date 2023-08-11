@@ -230,7 +230,7 @@ def set_ba_diet_bounds(
     silent: bool = False,
 ) -> None:
     """
-    Relaxes diet bounds according to Heinken et al. (2019) BA diet and tests model feasibility.
+    Changes select diet bounds according to Heinken et al. (2019) BA diet and tests model feasibility.
     Bounds are changed either if the BA diet lower bound is less than or equal to the model lower bound.
 
     Parameters
