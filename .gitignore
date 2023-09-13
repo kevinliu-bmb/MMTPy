@@ -1,5 +1,147 @@
-example_data/.DS_Store
-deprecated_code/*
+# General System Files
 .DS_Store
-__pycache__/*
-.vscode/settings.json
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Python Environment
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Python Tools and Frameworks
+# PyInstaller
+*.manifest
+*.spec
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+# Flask
+instance/
+.webassets-cache
+# Scrapy
+.scrapy
+# PEP 582
+__pypackages__/
+# Celery
+celerybeat-schedule
+celerybeat.pid
+# SageMath
+*.sage.py
+
+# R Environment
+.Rhistory
+.Rapp.history
+.RData
+.RDataTmp
+.Ruserdata
+*-Ex.R
+/*.tar.gz
+/*.Rcheck/
+.Rproj.user/
+.Renviron
+vignettes/*.html
+vignettes/*.pdf
+.httr-oauth
+*_cache/
+/cache/
+*.utf8.md
+*.knit.md
+po/*~
+rsconnect/
+
+# Documentation and Reports
+# Sphinx
+docs/_build/
+# PyBuilder
+.pybuilder/
+target/
+# Jupyter Notebook
+.ipynb_checkpoints
+# IPython
+profile_default/
+ipython_config.py
+# mkdocs
+/site
+# pkgdown
+docs/
+
+# Test and Coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Language Compilers and Analyzers
+# Pyre
+.pyre/
+# pytype
+.pytype/
+# Cython
+cython_debug/
+# Translations
+*.mo
+*.pot
+
+# Version Control
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+# Built Visual Studio Code Extensions
+*.vsix
+
+# Logs and Temporary Files
+pip-log.txt
+pip-delete-this-directory.txt
+# Dropbox
+.dropbox
+.dropbox.attr
+.dropbox.cache
+# Rope
+.ropeproject
