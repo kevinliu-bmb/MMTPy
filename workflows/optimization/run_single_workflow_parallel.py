@@ -1,8 +1,8 @@
 import concurrent.futures
 import os
 
-from mmtpy_opt_workflows import optimize_model, optimize_model_mbx
-from mmtpy_utils import convert_model_format, match_names_to_vmh
+from optimization_workflows import optimize_model, optimize_model_mbx
+from utils import convert_model_format, match_names_to_vmh
 
 # Define paths
 model_path = "example_data/models"

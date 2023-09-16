@@ -1,8 +1,8 @@
 import concurrent.futures
 import os
 
-from mmtpy_opt_workflows import optimize_model, optimize_model_mbx
-from mmtpy_utils import convert_model_format, match_names_to_vmh
+from optimization_workflows import optimize_model, optimize_model_mbx
+from utils import convert_model_format, match_names_to_vmh
 
 # Define paths
 model_path = "example_data/models"
@@ -12,7 +12,7 @@ mbx_matched_keys_input = "example_outputs/metabolomics_data_matched_key.txt"
 
 
 # Add 1BA to the model
-add_1ba = True
+add_1ba = False
 
 
 def main(

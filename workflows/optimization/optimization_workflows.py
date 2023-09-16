@@ -2,7 +2,7 @@ import os
 
 import cobra
 
-from mmtpy_utils import (
+from utils import (
     fetch_mbx_constr_list,
     fetch_norm_sample_mbx_data,
     load_model,
