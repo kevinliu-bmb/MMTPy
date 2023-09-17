@@ -1,6 +1,7 @@
 2-Hydroxy-3-methylbutyric acid:	2hiv
 2-Keto-3-methylvaleric acid:	3mop
 2-Hydroxyisocaproic acid:	2hxic_L
+Serine:	ser_L
 Benzenepropanoic acid:	pppn
 Hexanoic acid:	caproic
 Methylglutaric acid:	3mglutr
@@ -28,7 +29,6 @@ Glycerol:	glyc
 Pentanoic acid:	M03134
 Mannose:	man
 Proline:	pro_L
-Serine:	ser_L
 Threonine:	thr_L
 alpha-Ketoisovaleric acid:	3mob
 Aspartic acid:	asp_L

@@ -4,33 +4,20 @@ import os
 from optimization_workflows import optimize_model, optimize_model_mbx
 from utils import convert_model_format, match_names_to_vmh
 
-# Define paths
-model_path = "example_data/models"
-mbx_path = "example_data/metabolomics_data.csv"
-output_path = "example_outputs"
-mbx_matched_keys_input = "example_outputs/metabolomics_data_matched_key.txt"
-
-# Add 1BA to the model
-add_1ba = True
-
-# Select workflow (either "optimize_model" or "optimize_model_mbx")
-workflow = "optimize_model_mbx"
-
 
 def main(
     model_path: str,
+    diet_path: str,
     mbx_path: str,
     mbx_matched_keys_input: str,
     output_path: str,
     workflow: str,
-    add_1ba: bool,
 ):
     # Search through the model directory and find all the JSON and MATLAB files
     model_files = [f for f in os.listdir(model_path) if f.endswith(".json")]
     model_files_mat = [f for f in os.listdir(model_path) if f.endswith(".mat")]
 
-    # If the number of JSON files is less than the number of MATLAB files, convert
-    # all models to JSON format
+    # If the number of JSON files is less than the number of MATLAB files, convert all models to JSON format
     if len(model_files) < len(model_files_mat):
         with concurrent.futures.ProcessPoolExecutor() as executor:
             futures = []
@@ -52,8 +39,8 @@ def main(
             if workflow == "optimize_model":
                 args = [
                     f"{model_path}/{model_file}",
+                    diet_path,
                     output_path,
-                    add_1ba,
                     True,
                     False,
                     True,
@@ -71,10 +58,10 @@ def main(
                     )
                 args = [
                     f"{model_path}/{model_file}",
+                    diet_path,
                     mbx_path,
                     mbx_matched_keys_input,
                     output_path,
-                    add_1ba,
                     True,
                     False,
                     False,
@@ -94,4 +81,15 @@ def main(
 
 
 if __name__ == "__main__":
-    main(model_path, mbx_path, mbx_matched_keys_input, output_path, workflow, add_1ba)
+    # Define paths
+    model_path = "workflows/optimization/example_data/models"
+    diet_path = "workflows/optimization/example_data/avg_us_diet.txt"
+    mbx_path = "workflows/optimization/example_data/metabolomics_data.csv"
+    output_path = "workflows/optimization/example_outputs"
+    mbx_matched_keys_input = "workflows/optimization/example_outputs/metabolomics_data_matched_key.txt"
+
+    # Select workflow (either "optimize_model" or "optimize_model_mbx")
+    workflow = "optimize_model_mbx"
+    
+    # Run the main function
+    main(model_path, diet_path, mbx_path, mbx_matched_keys_input, output_path, workflow)

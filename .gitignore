@@ -139,6 +139,7 @@ cython_debug/
 # Logs and Temporary Files
 pip-log.txt
 pip-delete-this-directory.txt
+*_deprecated/
 # Dropbox
 .dropbox
 .dropbox.attr

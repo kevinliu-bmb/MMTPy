@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 import time
 from math import isnan
 
@@ -10,22 +9,16 @@ import pandas as pd
 import pubchempy as pcp
 
 
-def print_logo(tool: str, tool_description: str, version: str) -> None:
-    """
-    Print the logo, tool name, and version for the tool.
+def print_logo(tool: str, tool_description: str, version: str):
+    """Print the logo, tool name, and version for the tool.
 
-    Parameters
-    ----------
+    Parameters:
     tool : str
         The name of the tool.
     tool_description : str
         The description of the tool.
     version : str
         The version of the tool.
-
-    Returns
-    -------
-    None
     """
     logo = r"""
      ____      _          _       _____           _     
@@ -44,23 +37,19 @@ def print_logo(tool: str, tool_description: str, version: str) -> None:
 
 
 def load_model(model_path: str, simple_model_name: bool = True) -> cobra.Model:
-    """
-    Load a multi-species model into memory given a path to a model file in a COBRApy supported format.
+    """Load a multi-species model into memory given a path to a model file in a COBRApy supported format.
 
-    Parameters
-    ----------
+    Parameters:
     model_path : str
         Path to a multi-species model in any COBRApy supported format.
     simple_model_name : bool
         If True, the model name will be set to the file name with only the sample identifier (e.g., Case_1) and not the full file name (e.g., Case_1.xml).
 
-    Returns
-    -------
+    Returns:
     cobra.Model
         A COBRApy model loaded into memory.
 
-    Raises
-    ------
+    Raises:
     ValueError
         If the model_path does not exist.
     ValueError
@@ -100,29 +89,24 @@ def load_model(model_path: str, simple_model_name: bool = True) -> cobra.Model:
 
 def set_default_bounds(
     model: cobra.Model,
-    source: str = "MMTpy",
+    source: str = "cobraGEMM",
     rxn_type: str = "all",
     silent: bool = False,
 ) -> bool:
-    """
-    Set the bounds of the model's reactions according to conventions;
-    prints the changes and returns True if the bounds were different from the default state.
-    Conventional bounds can either be set based on Heinken et al. (2022), mgPipe models or be set based on MMTpy conventions.
+    """Set the bounds of the model's reactions according to conventions; prints the changes and returns True if the bounds were different from the default state. Conventional bounds can either be set based on Heinken et al. (2022), mgPipe models or be set based on cobraGEMM conventions.
 
-    Parameters
-    ----------
+    Parameters:
     model : cobra.Model
         The model whose reactions' bounds are to be set.
     source : str, optional
-        The definition of conventional bounds, by default "MMTpy"; options are of either "MMTpy" or "MATLAB".
+        The definition of conventional bounds, by default "cobraGEMM"; options are of either "cobraGEMM" or "MATLAB".
     rxn_type : str, optional
         The type of reactions whose bounds are to be set, by default "all";
         options are of either "all", "FEX", "UFEt", "IEX", "DUt", or "commBiomass".
     silent : bool, optional
         Whether to print the changes, by default False.
 
-    Returns
-    -------
+    Returns:
     bool
         True if the bounds were different from the default state.
 
@@ -135,7 +119,7 @@ def set_default_bounds(
     4. Set the bounds of the microbe secretion/uptake (microbe_IEX_met[u]tr) reactions to be (-1000., 1000.)
     5. Set the bounds of the community biomass reaction to be (0.4, 1.)
 
-    The default bounds for MMTpy are as follows:
+    The default bounds for cobraGEMM are as follows:
     1. Set the bounds of the fecal exchange (EX_met[fe]) reactions for metabolites to be (0., 1000000.)
     2. Set the bounds of the fecal exchange (EX_met[fe]) reaction for "microbeBiomass" to be (0., 1000000.)
     3. Set the bounds of the fecal transport (UFEt_met) reactions to be (0., 1000000.)
@@ -156,7 +140,7 @@ def set_default_bounds(
             and rxn_type in ["all", "FEX"]
         ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            if source == "MMTpy":
+            if source == "cobraGEMM":
                 model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
             elif source == "MATLAB":
                 model.reactions.get_by_id(rxn.id).bounds = (-1000.0, 1000000.0)
@@ -171,7 +155,7 @@ def set_default_bounds(
             and rxn_type in ["all", "FEX"]
         ):
             saved_bounds[rxn.id] = model.reactions.get_by_id(rxn.id).bounds
-            if source == "MMTpy":
+            if source == "cobraGEMM":
                 model.reactions.get_by_id(rxn.id).bounds = (0.0, 1000000.0)
             elif source == "MATLAB":
                 model.reactions.get_by_id(rxn.id).bounds = (-10000.0, 1000000.0)
@@ -221,105 +205,22 @@ def set_default_bounds(
     return bounds_changed
 
 
-def set_ba_diet_bounds(
-    model: cobra.Model,
-    diet_filepath: str = "data_dependencies/Heinken_2019_BA_diet.csv",
-    silent: bool = False,
-) -> None:
-    """
-    Changes select diet bounds according to Heinken et al. (2019) BA diet and tests model feasibility.
-    Bounds are changed either if the BA diet lower bound is less than or equal to the model lower bound.
-
-    Parameters
-    ----------
-    model : cobra.Model
-        Model to be modified.
-    diet_filepath : str, optional
-        Path to csv file containing BA diet bounds. The default is "data_dependencies/Heinken_2019_BA_diet.csv".
-    silent : bool, optional
-        If True, no changes are printed. The default is False.
-
-    Returns
-    -------
-    None
-    """
-    ba_diet_df = pd.read_csv(diet_filepath, skiprows=1)
-
-    ba_diet_df["Reaction"] = ba_diet_df["Reaction"].str.replace("(e)", "", regex=False)
-
-    ba_diet_df["Upper bound"] = ba_diet_df["Upper bound"].replace(1000.0, 10000.0)
-
-    ba_diet_dict = {
-        f"Diet_{ba_diet_df['Reaction'][i]}[d]": (
-            ba_diet_df["Lower bound"][i],
-            ba_diet_df["Upper bound"][i],
-        )
-        for i in range(len(ba_diet_df))
-        if "EX_biomass[c]" not in ba_diet_df["Reaction"][i]
-    }
-
-    print(
-        "\n[1/2] Changing select diet bounds according to Heinken et al. (2019) BA diet"
-    )
-    for diet_rxn, diet_bounds in ba_diet_dict.items():
-        rxn_bounds = [
-            (-0.1, 10000.0),
-            (0.0, 10000.0),
-            (-1000.0, 10000.0),
-            (-50.0, 10000.0),
-        ]
-        if diet_rxn in model.reactions:
-            if (
-                diet_bounds in rxn_bounds
-                and diet_bounds != model.reactions.get_by_id(diet_rxn).bounds
-                and diet_bounds[0] <= model.reactions.get_by_id(diet_rxn).lower_bound
-            ):
-                if not silent:
-                    print(
-                        f"\t{diet_rxn}:\t bounds changed from {model.reactions.get_by_id(diet_rxn).bounds} to {ba_diet_dict[diet_rxn]}"
-                    )
-                model.reactions.get_by_id(diet_rxn).bounds = ba_diet_dict[diet_rxn]
-        elif diet_rxn not in model.reactions:
-            print(f"\tWarning: {diet_rxn}:\treaction not in model")
-        else:
-            print(f"\tWarning: {diet_rxn}:\tbounds not changed")
-
-    print("\n[2/2] Testing model feasibility with BA diet")
-    model.objective = 0
-    ba_diet_sol = model.optimize()
-    if ba_diet_sol.status == "optimal":
-        print(
-            "\tModel is feasible with relaxed BA diet, proceeding with remaining steps"
-        )
-    else:
-        print("\tWarning: Model is infeasible with relaxed BA diet, terminating workflow")
-        sys.exit()
-
-
 def convert_model_format(
     model_path: str or cobra.Model, output_path: str = None
-) -> None:
-    """
-    Convert a mgPipe.m (Heinken et al., 2022) MATLAB model to a json model.
+):
+    """Convert a mgPipe.m (Heinken et al., 2022) MATLAB model to a json model.
 
-    Parameters
-    ----------
+    Parameters:
     model_path : str or cobra.Model
         Path to the model file or a COBRApy model loaded into memory.
     output_path : str
         Path to the output file.
 
-    Returns
-    -------
-    None
-
-    Raises
-    ------
+    Raises:
     ValueError
         If model_path is not a string or a COBRApy model.
 
-    Notes
-    -----
+    Notes:
     If the metabolite charge is NaN, it is converted to a string.
     """
     if isinstance(model_path, str):
@@ -352,21 +253,17 @@ def convert_model_format(
 
 
 def convert_string(s: str) -> str:
-    """
-    Convert a string to a standard format for matching.
+    """Convert a string to a standard format for matching.
 
-    Parameters
-    ----------
+    Parameters:
     s : str
         String to be converted.
 
-    Returns
-    -------
+    Returns:
     str
         Converted string.
 
-    Notes
-    -----
+    Notes:
     The following operations are performed:
         1. Remove everything in parenthesis.
         2. Convert '.' to ',' between numbers.
@@ -385,21 +282,17 @@ def convert_string(s: str) -> str:
 
 
 def get_init_mbx_idx(df: pd.DataFrame) -> int:
-    """
-    Get the index of the first numerical column in a dataframe.
+    """Get the index of the first numerical column in a dataframe.
 
-    Parameters
-    ----------
+    Parameters:
     df : pd.DataFrame
         Dataframe to be searched.
 
-    Raises
-    ------
+    Raises:
     ValueError
         If no numerical columns are found.
 
-    Returns
-    -------
+    Returns:
     int
         Index of the first numerical column.
     """
@@ -413,19 +306,16 @@ def match_names_to_vmh(
     mbx_filepath: str,
     output_filepath: str,
     reuturn_matched_keys: bool,
-    vmh_db_filepath: str = "data_dependencies/all_vmh_metabolites.tsv",
-    manual_matching_filepath: str = "data_dependencies/manually_matched_keys.txt",
+    vmh_db_filepath: str = "workflows/optimization/data_dependencies/all_vmh_metabolites.tsv",
+    manual_matching_filepath: str = "workflows/optimization/data_dependencies/manually_matched_keys.txt",
     silent: bool = False,
 ) -> dict:
-    """
-    Map the metabolite names detected by MBX to VMH identifiers for a given
-    MBX dataset. The matching is performed in the following order:
+    """Map the metabolite names detected by MBX to VMH identifiers for a given MBX dataset. The matching is performed in the following order:
         1. Direct matching of MBX names to VMH identifiers using the VMH database.
         2. Matching of MBX names to VMH identifiers via pubchempy.
         3. Manual matching of MBX names to VMH identifiers.
 
-    Parameters
-    ----------
+    Parameters:
     mbx_filepath : str
         Filepath to the MBX data.
     output_filepath : str
@@ -439,18 +329,15 @@ def match_names_to_vmh(
     silent : bool
         If True, no matchings are printed.
 
-    Raises
-    ------
+    Raises:
     ValueError
         If model_path is not a string or a COBRApy model.
 
-    Returns
-    -------
+    Returns:
     dict
         Dictionary of matched keys.
 
-    Notes
-    -----
+    Notes:
     The metabolomics data must be a .csv file with samples as the column headers
     and metabolite names as the row indicies. The metabolite names must be canonical
     metabolite names (e.g. "L-Aspartate", "L-Asparagine", etc.). For matching via
@@ -615,11 +502,9 @@ def fetch_norm_sample_mbx_data(
     mbx_filepath: str,
     matched_mbx_names: dict,
 ) -> dict:
-    """
-    Generate a dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
+    """Generate a dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
 
-    Parameters
-    ----------
+    Parameters:
     model_input : cobra.Model or str
         The COBRApy model loaded into memory or a file path to the model
     mbx_filepath : str
@@ -627,13 +512,11 @@ def fetch_norm_sample_mbx_data(
     match_key_input : dict
         Dictionary of matched vmh_id and metabolite name keys.
 
-    Returns
-    -------
+    Returns:
     dict
         Dictionary of VMH IDs and their corresponding normalized sample-specific metabolite values.
 
-    Raises
-    ------
+    Raises:
     TypeError
         If model_input is not a cobra.Model or a filepath to a COBRApy model.
     ValueError
@@ -717,24 +600,20 @@ def fetch_norm_sample_mbx_data(
 
 
 def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list:
-    """
-    Compute the MBX associated FEX reaction constraints for a sample and tests
+    """Compute the MBX associated FEX reaction constraints for a sample and tests
     if the addition of the constraints gives a feasible solution.
 
-    Parameters
-    ----------
+    Parameters:
     model : cobra.Model
         The model to be constrained.
     mbx_metab_norm_dict : dict
         A dictionary of metabolite names and their normalized values.
 
-    Returns
-    -------
+    Returns:
     list
         A list of the constraints added to the model.
 
-    Raises
-    ------
+    Raises:
     ValueError
         If no constraints were added to the model.
     """
@@ -791,11 +670,9 @@ def fetch_mbx_constr_list(model: cobra.Model, mbx_metab_norm_dict: dict) -> list
 def solve_mbx_constraints(
     model: cobra.Model, constraints: list, parallel: bool = False
 ) -> list:
-    """
-    Add slack variables to infeasible constraints and test if the solution is feasible.
+    """Add slack variables to infeasible constraints and test if the solution is feasible.
 
-    Parameters
-    ----------
+    Parameters:
     model : cobra.Model
         The model to be constrained.
     constraints : list
@@ -803,8 +680,7 @@ def solve_mbx_constraints(
     parallel : bool, optional
         If True, no detailed outputs will be printed, by default False
 
-    Returns
-    -------
+    Returns:
     list
         A list of the constraints added to the model.
     list
