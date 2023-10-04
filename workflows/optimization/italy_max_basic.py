@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 
-from workflows.optimization.optimization_workflows_max import (
+from optimization_workflows_max import (
     optimize_model,
     optimize_model_mbx,
 )

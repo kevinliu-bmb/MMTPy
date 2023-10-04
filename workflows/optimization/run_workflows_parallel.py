@@ -74,9 +74,11 @@ def main(
 
 if __name__ == "__main__":
     # Define paths
-    model_path = "workflows/optimization/example_data/models"
-    mbx_path = "workflows/optimization/example_data/metabolomics_data_assert_non_large_value.csv"
-    output_path = "workflows/optimization/example_outputs"
+    model_path = ("workflows/optimization/example_data/models",)
+    mbx_path = (
+        "workflows/optimization/example_data/metabolomics_data_assert_non_large_value.csv",
+    )
+    output_path = ("workflows/optimization/example_outputs",)
     mbx_matched_keys_input = (
         "workflows/optimization/example_outputs/metabolomics_data_matched_key.txt"
     )
