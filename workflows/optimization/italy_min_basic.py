@@ -86,7 +86,7 @@ def main(
 if __name__ == "__main__":
     # Define paths
     model_path = "/Users/kevinliu/Dropbox (Partners HealthCare)/Zomorrodi_Lab/Capstone_Project/workflow_data_io/cobraGEMM_data/italy_models_json"
-    diet_path = "workflows/optimization/example_data/mediterranean_diet.txt"
+    diet_path = "/Users/kevinliu/GitHub/cobraGEMM/workflows/optimization/example_data/mediterranean_diet.txt"
     # mbx_path = "/Users/kevinliu/Dropbox (Partners HealthCare)/Zomorrodi_Lab/Capstone_Project/workflow_data_io/cobraGEMM_data/metabolomics_data.csv"
     output_path = "/Users/kevinliu/Dropbox (Partners HealthCare)/Zomorrodi_Lab/Capstone_Project/workflow_data_io/cobraGEMM_data/output_min_italy_basic"
     # mbx_matched_keys_input = "/Users/kevinliu/Dropbox (Partners HealthCare)/Zomorrodi_Lab/Capstone_Project/workflow_data_io/cobraGEMM_data/output_maximize_us/metabolomics_data_matched_key.txt"
