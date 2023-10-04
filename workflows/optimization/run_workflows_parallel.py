@@ -1,7 +1,10 @@
 import concurrent.futures
 import os
 
-from optimization_workflows import optimize_model, optimize_model_mbx
+from workflows.optimization.optimization_workflows_min import (
+    optimize_model,
+    optimize_model_mbx,
+)
 from utils import convert_model_format, match_names_to_vmh
 
 
@@ -74,7 +77,9 @@ if __name__ == "__main__":
     model_path = "workflows/optimization/example_data/models"
     mbx_path = "workflows/optimization/example_data/metabolomics_data_assert_non_large_value.csv"
     output_path = "workflows/optimization/example_outputs"
-    mbx_matched_keys_input = "workflows/optimization/example_outputs/metabolomics_data_matched_key.txt"
-    
+    mbx_matched_keys_input = (
+        "workflows/optimization/example_outputs/metabolomics_data_matched_key.txt"
+    )
+
     # Run the main function
     main(model_path, mbx_path, mbx_matched_keys_input, output_path)

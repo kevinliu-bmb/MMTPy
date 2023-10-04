@@ -178,7 +178,7 @@ def optimize_model(
                 # If it is an IEX reaction, minimize the reaction flux
                 if "IEX" in rxn.id:
                     model.objective = model.reactions.get_by_id(rxn.id)
-                    solution = model.optimize(objective_sense="minimize")
+                    solution = model.optimize(objective_sense="maximize")
                     minimized_IEX_flux_dict[rxn.id] = solution.objective_value
                     if not parallel:
                         print(f"\t\t{rxn.id}:\t{solution.objective_value}")
@@ -320,7 +320,7 @@ def optimize_model_mbx(
 
     # Set all fecal exchange reaction lower bounds to zero
     set_default_bounds(model=model, rxn_type="FEX", silent=silent)
-    
+
     # set the diet exchange reactions to the feasible bounds, if they exist
     model = adapt_diet_and_minimize_infeasibility(
         model=model,
@@ -345,18 +345,18 @@ def optimize_model_mbx(
     # Optimize the model by minimizing the fluxes of reactions for each metabolite
     min_opt_solutions = dict()
     if not parallel:
-        print(f"\n[Minimizing the model {model.name} for each metabolite]")
+        print(f"\n[Maximizing the model {model.name} for each metabolite]")
     for rxn_id in [
         rxn.id
         for rxn in model.reactions
         if "_IEX_" in rxn.id and rxn.id.endswith("[u]tr")
     ]:
         model.objective = model.reactions.get_by_id(rxn_id)
-        solution = model.optimize(objective_sense="minimize")
+        solution = model.optimize(objective_sense="maximize")
         if solution.objective_value != 0.0 or verbose:
             if not parallel:
                 print(
-                    f"\tMinimized: {model.reactions.get_by_id(rxn_id).id}:\t{solution.objective_value}"
+                    f"\Maximized: {model.reactions.get_by_id(rxn_id).id}:\t{solution.objective_value}"
                 )
         min_opt_solutions[rxn_id] = solution.objective_value
 
@@ -382,7 +382,7 @@ def optimize_model_mbx(
     with open(f"{output_path}/{model.name}_slack_var_log.txt", "w") as f:
         for line in constr_details:
             f.write(f"{line}\n")
-    with open(f"{output_path}/{model.name}_min_mbx_opt_flux.txt", "w") as f:
+    with open(f"{output_path}/{model.name}_max_mbx_opt_flux.txt", "w") as f:
         for rxn_id in min_opt_solutions:
             f.write(f"{rxn_id}:\t{min_opt_solutions[rxn_id]}\n")
     # with open(f"{output_path}/{model.name}_max_mbx_opt_flux.txt", "w") as f:
@@ -390,7 +390,7 @@ def optimize_model_mbx(
     #         f.write(f"{rxn_id}:\t{max_opt_solutions[rxn_id]}\n")
 
     if parallel:
-        print(f"\n[DONE] 'optimize_model_mbx' workflow for {model_input}")
+        print(f"\n[DONE] 'optimize_model_max' workflow for {model_input}")
 
     if return_outputs:
         return min_opt_solutions
