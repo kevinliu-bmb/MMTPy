@@ -171,7 +171,7 @@ An additional feature available in cobraGEMM is the ability to match metabolite 
 - Irreversible reaction
 - By default, has bounds of (0., 1000000.)
 
-#### Internal exchange reactions (i.e., "IEX" reactions)
+#### Intracellular exchange reactions (i.e., "IEX" reactions)
 
 - 'microbe_IEX_met[u]tr': 'microbe_met[c] <=> met[u]'
 - Reversible reaction
