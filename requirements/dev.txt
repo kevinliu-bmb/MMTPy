@@ -1,0 +1,10 @@
+ipython
+pdbpp
+twine
+wheel
+pytest
+pytest-cov
+pytest-sugar
+ruff
+
+setuptools

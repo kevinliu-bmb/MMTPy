@@ -1,0 +1,6 @@
+# Install sourcery
+ pip install sourcery
+ # Login - store SOURCERY_TOKEN in a secret/masked environment variable
+ sourcery login --token $SOURCERY_TOKEN
+ # Review only changed lines with Sourcery
+ sourcery review --check .
