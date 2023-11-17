@@ -78,18 +78,3 @@ def main(
         # Retrieve the results
         for future in futures:
             future.result()
-
-
-if __name__ == "__main__":
-    # Define paths
-    model_path = "workflows/optimization/example_data/models"
-    diet_path = "workflows/optimization/example_data/avg_us_diet.txt"
-    mbx_path = "workflows/optimization/example_data/metabolomics_data.csv"
-    output_path = "workflows/optimization/example_outputs"
-    mbx_matched_keys_input = "workflows/optimization/example_outputs/metabolomics_data_matched_key.txt"
-
-    # Select workflow (either "optimize_model" or "optimize_model_mbx")
-    workflow = "optimize_model_mbx"
-    
-    # Run the main function
-    main(model_path, diet_path, mbx_path, mbx_matched_keys_input, output_path, workflow)
