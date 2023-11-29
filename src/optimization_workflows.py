@@ -295,3 +295,4 @@ def optimize_model_mbx(
 
     if return_outputs:
         return min_opt_solutions
+
