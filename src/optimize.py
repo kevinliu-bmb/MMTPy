@@ -74,7 +74,7 @@ def optimize_model_mbx(
             mbx_matched_keys_dict = match_names_to_vmh(
                 mbx_filepath=met_path,
                 output_filepath=mbx_output_path,
-                reuturn_matched_keys=True,
+                return_matched_keys=True,
             )
         elif os.path.exists(met_matched_keys_input):
             mbx_matched_keys_dict = dict()
