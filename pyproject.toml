@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "cobragemm"
+version = "0.1.0"
+description = "A community genome-scale metabolic model assembly and optimization tool."
+authors = ["Kevin Liu <kevinliu.bmb@gmail.com>"]
+license = "GPL 3.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+cobra = "^0.29.0"
+optlang = "^1.8.1"
+
+[tool.poetry.group.dev.dependencies]
+gurobipy = "^11.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
