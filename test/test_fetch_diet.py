@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock, patch, mock_open
 import sys
 
-sys.path.append('src/')
+sys.path.append('src/utils')
 
 from fetch_diet import FetchDiet
 
