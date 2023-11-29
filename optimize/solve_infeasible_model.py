@@ -1,22 +1,7 @@
 import pandas as pd
 import cobra
 
-
-essential_metabolites = [
-    '12dgr180', '26dap_M', '2dmmq8', '2obut', '3mop', '4abz', '4hbz', 'ac',
-    'acgam', 'acmana', 'acnam', 'ade', 'adn', 'adocbl', 'ala_D', 'ala_L',
-    'amet', 'amp', 'arab_D', 'arab_L', 'arg_L', 'asn_L', 'btn', 'ca2', 
-    'cbl1', 'cgly', 'chor', 'chsterol', 'cit', 'cl', 'cobalt2', 'csn',
-    'cu2', 'cys_L', 'cytd', 'dad_2', 'dcyt', 'ddca', 'dgsn', 'fald', 'fe2',
-    'fe3', 'fol', 'for', 'gal', 'glc_D', 'gln_L', 'glu_L', 'gly', 'glyc',
-    'glyc3p', 'gsn', 'gthox', 'gthrd', 'gua', 'h', 'h2o', 'h2s', 'his_L',
-    'hxan', 'ile_L', 'k', 'lanost', 'leu_L', 'lys_L', 'malt', 'met_L', 'mg2',
-    'mn2', 'mqn7', 'mqn8', 'nac', 'ncam', 'nmn', 'no2', 'ocdca', 'ocdcea',
-    'orn', 'phe_L', 'pheme', 'pi', 'pnto_R', 'pro_L', 'ptrc', 'pydx', 'pydxn',
-    'q8', 'rib_D', 'ribflv', 'ser_L', 'sheme', 'so4', 'spmd', 'thm', 'thr_L',
-    'thymd', 'trp_L', 'ttdca', 'tyr_L', 'ura', 'val_L', 'xan', 'xyl_D', 'zn2'
-]
-
+from essential_metabolites import essential_metabolites
 
 def adapt_diet_and_minimize_infeasibility(model: cobra.Model, diet_file_path: str, output_file: str) -> cobra.Model:
     """Incorporate AGORA model-specific dietary components and check for model feasibility, reelaxing the lower bounds if necessary.

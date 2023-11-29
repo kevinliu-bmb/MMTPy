@@ -83,20 +83,16 @@ po/*~
 rsconnect/
 
 # Documentation and Reports
-# Sphinx
-docs/_build/
 # PyBuilder
 .pybuilder/
 target/
 # Jupyter Notebook
+testing.ipynb
 .ipynb_checkpoints
 # IPython
 profile_default/
 ipython_config.py
-# mkdocs
-/site
-# pkgdown
-docs/
+
 
 # Test and Coverage
 htmlcov/
