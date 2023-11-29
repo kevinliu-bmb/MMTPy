@@ -1,0 +1,53 @@
+Glycolic acid	glyclt
+2-Hydroxy-3-methylbutyric acid	2hiv
+Pentanoic acid	M03134
+2-Keto-3-methylvaleric acid	3mop
+Propanal	ppal
+2-Hydroxyisocaproic acid	2hxic_L
+Benzoic acid	bz
+Serine	ser_L
+Glycerol	glyc
+2,3-Butanediol	dtt
+Threonine	thr_L
+Glycine	gly
+Glyceric acid	glyc_R
+Nonanoic acid	C01601
+Butanoic acid	but
+Benzenepropanoic acid	pppn
+alpha-Ketoisovaleric acid	3mob
+Hexanoic acid	caproic
+Methylglutaric acid	3mglutr
+Proline	pro_L
+Aspartic acid	asp_L
+Decanoic acid	dca
+Malic acid	mal_L
+Lactic acid	lac_D
+Arabinose	arab_L
+Butanedioic acid	succ
+2-Deoxy-D-ribose	drib
+Xylose	xyl_D
+Arabinonic acid	arabt_L
+Ribitol	rbt
+Gluconic acid	glcn
+3-Hydroxyphenylacetic acid	3hphac
+Ribose	rib_D
+Lauric acid	ddca
+3-Hydroxy-3-phenylpropanoic acid	phlac
+Fructose	fru
+Sorbose	srb_L
+Methylgalactoside	mgal
+Myristic acid	ttdca
+Arabinopyranose	arab_L
+Tagatose	tagat_D
+Glucose	glc_D
+Allose	all_D
+Galactaric acid	galct_D
+Palmitic acid	hdca
+N-Acetyl-D-galactosamine	acgal
+Mannose	man
+Stearic acid	ocdca
+Acetylgalactosamine	acgal
+Sebacic acid	sebacid
+Galactose	gal
+Xylitol	xylt
+Laurate	ddca
